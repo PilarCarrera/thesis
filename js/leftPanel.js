@@ -12,6 +12,7 @@ import {
   positionFixedCentered,
 } from './utils.js';
 import { showChatContext } from './chat.js';
+import { speakText } from './tts.js';
 
 const contentEl = document.getElementById('reformattedContent');
 const highlightPaletteEl = document.getElementById('highlightPalette');
@@ -187,6 +188,10 @@ function syncPageDrawerActive(pageKey) {
 
 function selectionActionHandler(action, selectedText) {
   if (!selectedText.trim()) return hideElement(selectionMenu);
+  if (action === 'read') {
+    speakText(selectedText);
+    return;
+  }
   showChatContext(action, selectedText);
   const sel = window.getSelection();
   if (sel) sel.removeAllRanges();

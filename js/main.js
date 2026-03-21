@@ -2,6 +2,7 @@ import { initChat, hideChatContextBubble, closeFloatingMenu } from './chat.js';
 import { initLeftPanel, loadPage, hideAllFloatingMenus } from './leftPanel.js';
 import { initRightPanel, closeMindMap, closeSettingsPanel } from './rightPanel.js';
 import { initPageDrawer, closePageDrawer } from './pageDrawer.js';
+import { initTts } from './tts.js';
 
 const pagePickerBtn = document.querySelector('[data-page-picker-btn="true"]');
 const pagePickerMenu = document.querySelector('[data-page-picker-menu="true"]');
@@ -41,6 +42,7 @@ function closeAllPopups() {
 initLeftPanel();
 initRightPanel();
 initChat();
+initTts();
 initPageDrawer();
 initPagePicker();
 

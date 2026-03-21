@@ -229,3 +229,21 @@ export function initChat() {
 export function hideChatContextBubble() {
   if (chatContextBubble) chatContextBubble.hidden = true;
 }
+
+export function getCurrentTtsConfig() {
+  const settings = getChatSettings();
+  const rateMap = {
+    'x0.25': 0.25,
+    'x0.5': 0.5,
+    'x0.75': 0.75,
+    x1: 1,
+    'x1.25': 1.25,
+    'x1.5': 1.5,
+    'x1.75': 1.75,
+    x2: 2,
+  };
+  return {
+    voiceLabel: settings.ttsVoice,
+    rate: rateMap[settings.ttsSpeed] || 1,
+  };
+}
