@@ -73,6 +73,10 @@ function appendMessage(role, content, options = {}) {
   chatThread.scrollTop = chatThread.scrollHeight;
 }
 
+export function appendUserMessage(text) {
+  appendMessage('user', text);
+}
+
 export function openChatView() {
   if (rightPanel) rightPanel.dataset.view = 'chat';
 }
@@ -245,5 +249,133 @@ export function getCurrentTtsConfig() {
   return {
     voiceLabel: settings.ttsVoice,
     rate: rateMap[settings.ttsSpeed] || 1,
+    highlightColor: settings.ttsHighlight || DEFAULT_HL_COLOR,
+  };
+}
+
+export function appendTtsPlayer(title, controller) {
+  if (!chatThread || !controller) return null;
+  const msg = document.createElement('div');
+  msg.className = 'chat-message assistant tts-player';
+
+  const bar = document.createElement('div');
+  bar.className = 'tts-player-bar';
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'tts-player-title';
+  titleEl.textContent = title;
+
+  const controls = document.createElement('div');
+  controls.className = 'tts-player-controls';
+
+  const playBtn = document.createElement('button');
+  playBtn.type = 'button';
+  playBtn.className = 'tts-btn';
+  playBtn.textContent = '⏸';
+
+  const stopBtn = document.createElement('button');
+  stopBtn.type = 'button';
+  stopBtn.className = 'tts-btn';
+  stopBtn.textContent = '⏹';
+
+  const calibrateBtn = document.createElement('button');
+  calibrateBtn.type = 'button';
+  calibrateBtn.className = 'tts-btn';
+  calibrateBtn.textContent = '⚙';
+  calibrateBtn.title = 'Calibrate highlight speed';
+
+  const calibrateAllBtn = document.createElement('button');
+  calibrateAllBtn.type = 'button';
+  calibrateAllBtn.className = 'tts-btn';
+  calibrateAllBtn.textContent = '⚡';
+  calibrateAllBtn.title = 'Calibrate all speeds';
+
+  controls.appendChild(playBtn);
+  controls.appendChild(stopBtn);
+  controls.appendChild(calibrateBtn);
+  controls.appendChild(calibrateAllBtn);
+
+  const progressWrap = document.createElement('div');
+  progressWrap.className = 'tts-player-progress';
+  const progressFill = document.createElement('div');
+  progressFill.className = 'tts-player-progress-fill';
+  progressWrap.appendChild(progressFill);
+
+  bar.appendChild(titleEl);
+  bar.appendChild(controls);
+  bar.appendChild(progressWrap);
+  msg.appendChild(bar);
+  chatThread.appendChild(msg);
+  chatThread.scrollTop = chatThread.scrollHeight;
+
+  let isPaused = false;
+  let startedAt = Date.now();
+  let elapsed = 0;
+  const duration = controller.durationSeconds || 1;
+  let timer = null;
+
+  const updateProgress = () => {
+    const totalElapsed = elapsed + (Date.now() - startedAt) / 1000;
+    const pct = Math.min(totalElapsed / duration, 1);
+    progressFill.style.width = `${pct * 100}%`;
+  };
+
+  const startTimer = () => {
+    clearInterval(timer);
+    startedAt = Date.now();
+    timer = setInterval(updateProgress, 200);
+  };
+
+  const stopTimer = () => {
+    clearInterval(timer);
+    timer = null;
+  };
+
+  startTimer();
+
+  playBtn.addEventListener('click', () => {
+    if (isPaused) {
+      controller.resume();
+      isPaused = false;
+      playBtn.textContent = '⏸';
+      startTimer();
+      return;
+    }
+    controller.pause();
+    isPaused = true;
+    playBtn.textContent = '▶';
+    elapsed += (Date.now() - startedAt) / 1000;
+    stopTimer();
+  });
+
+  stopBtn.addEventListener('click', () => {
+    controller.stop();
+    stopTimer();
+    progressFill.style.width = '0%';
+    playBtn.textContent = '▶';
+  });
+
+  calibrateBtn.addEventListener('click', () => {
+    if (controller.calibrate) controller.calibrate();
+  });
+
+  calibrateAllBtn.addEventListener('click', () => {
+    if (controller.calibrateAll) controller.calibrateAll();
+  });
+
+  if (controller.onEnd) {
+    controller.onEnd(() => {
+      stopTimer();
+      progressFill.style.width = '100%';
+      playBtn.textContent = '▶';
+    });
+  }
+
+  return {
+    onEnd() {
+      stopTimer();
+      progressFill.style.width = '100%';
+      playBtn.textContent = '▶';
+    },
   };
 }

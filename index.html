@@ -14,6 +14,9 @@
       </div>
       <div class="brand-name">StudyBuddy</div>
     </div>
+    <button class="settings-toggle icon-only topbar-settings" type="button" data-settings="toggle" aria-label="Chat settings">
+      <span class="settings-icon" aria-hidden="true">⚙</span>
+    </button>
     <nav class="nav">
       <a href="#features">Features</a>
       <a href="#how">How it works</a>
@@ -99,19 +102,19 @@
             Ask me anything!
           </button>
           <div class="quick-actions">
-            <button class="action-card" data-switch="chat">
+            <button class="action-card" data-menu-action="summary">
               <span class="card-icon">⌗</span>
               Summary
             </button>
-            <button class="action-card" data-switch="chat">
+            <button class="action-card" data-menu-action="read-text">
               <span class="card-icon">⌂</span>
               Read Text
             </button>
-            <button class="action-card" data-switch="chat">
+            <button class="action-card" data-menu-action="mindmap">
               <span class="card-icon">✳</span>
               Mind Map
             </button>
-            <button class="action-card" data-switch="chat">
+            <button class="action-card" data-menu-action="chat">
               <span class="card-icon">✉</span>
               Chat
             </button>
@@ -153,9 +156,9 @@
           <span class="mi-icon">✳</span>
           <span>Mind Map</span>
         </button>
-        <button class="menu-item" data-menu-action="tts">
+        <button class="menu-item" data-menu-action="read-text">
           <span class="mi-icon">🔊</span>
-          <span>TTS</span>
+          <span>Read Text</span>
         </button>
         <button class="menu-item" data-menu-action="chat">
           <span class="mi-icon">✉</span>

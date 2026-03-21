@@ -41,6 +41,10 @@ body {
   z-index: 5;
 }
 
+.topbar-settings {
+  margin-left: 12px;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -922,6 +926,68 @@ body {
 
 .chat-message mark {
   background-color: var(--chat-highlight-color);
+}
+
+.tts-container {
+  --tts-highlight: #f6e27a4d;
+}
+
+.tts-word.tts-active {
+  background-color: var(--tts-highlight);
+  border-radius: 6px;
+  padding: 0 2px;
+}
+
+.chat-message.tts-player {
+  align-self: center;
+  max-width: min(78%, 520px);
+}
+
+.tts-player-bar {
+  background: #eef4fb;
+  border: 1px solid #cfe3fb;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.tts-player-title {
+  font-size: 12px;
+  color: #355670;
+}
+
+.tts-player-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tts-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid #2f5f8f;
+  background: #ffffff;
+  color: #2f5f8f;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+
+.tts-player-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: #dbe9f8;
+  overflow: hidden;
+}
+
+.tts-player-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #8fb6e6;
+  transition: width 0.2s linear;
 }
 
 .chat-bar {

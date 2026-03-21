@@ -1,8 +1,9 @@
 import { openChatView, prefillChat, closeFloatingMenu } from './chat.js';
+import { readCurrentPageFromChat } from './reading.js';
 
 const rightPanel = document.querySelector('.panel.right');
 const viewSwitchers = document.querySelectorAll('[data-switch]');
-const settingsToggle = document.querySelector('[data-settings="toggle"]');
+const settingsToggles = document.querySelectorAll('[data-settings="toggle"]');
 const settingsPanel = document.querySelector('.settings-panel');
 const settingsTabs = document.querySelectorAll('[data-settings-tab]');
 const settingsBodies = document.querySelectorAll('[data-settings-body]');
@@ -11,6 +12,8 @@ const mindMapModal = document.getElementById('mindMapModal');
 const mindMapCloseBtn = document.querySelector('[data-mindmap-close="true"]');
 const floatingMenu = document.querySelector('.floating-menu');
 const floatingMenuItems = document.querySelectorAll('[data-menu-action]');
+const quickActionItems = document.querySelectorAll('.quick-actions [data-menu-action]');
+const askPill = document.querySelector('.ask-pill');
 
 function openMindMap() {
   if (!mindMapModal) return;
@@ -51,12 +54,14 @@ export function initRightPanel() {
     });
   }
 
-  if (settingsToggle && settingsPanel) {
-    settingsToggle.addEventListener('click', () => {
-      settingsPanel.classList.toggle('open');
+  if (settingsToggles.length && settingsPanel) {
+    settingsToggles.forEach((toggle) => {
+      toggle.addEventListener('click', () => {
+        settingsPanel.classList.toggle('open');
+      });
     });
     document.addEventListener('click', (event) => {
-      const isGear = settingsToggle.contains(event.target);
+      const isGear = Array.from(settingsToggles).some((toggle) => toggle.contains(event.target));
       const isPanel = settingsPanel.contains(event.target);
       if (!isGear && !isPanel) settingsPanel.classList.remove('open');
     });
@@ -92,8 +97,9 @@ export function initRightPanel() {
         prefillChat('Make a summary about ');
         return;
       }
-      if (action === 'tts') {
-        prefillChat('Read the text out loud of ');
+      if (action === 'read-text') {
+        readCurrentPageFromChat(document.getElementById('reformattedContent'));
+        closeFloatingMenu();
         return;
       }
       if (action === 'chat') {
@@ -101,5 +107,32 @@ export function initRightPanel() {
         closeFloatingMenu();
       }
     });
+  }
+
+  if (quickActionItems.length) {
+    quickActionItems.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const action = btn.dataset.menuAction;
+        if (action === 'mindmap') {
+          openMindMap();
+          return;
+        }
+        if (action === 'summary') {
+          prefillChat('Make a summary about ');
+          return;
+        }
+        if (action === 'read-text') {
+          readCurrentPageFromChat(document.getElementById('reformattedContent'));
+          return;
+        }
+        if (action === 'chat') {
+          openChatView();
+        }
+      });
+    });
+  }
+
+  if (askPill) {
+    askPill.addEventListener('click', () => openChatView());
   }
 }

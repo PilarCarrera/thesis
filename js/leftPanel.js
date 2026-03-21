@@ -12,7 +12,7 @@ import {
   positionFixedCentered,
 } from './utils.js';
 import { showChatContext } from './chat.js';
-import { speakText } from './tts.js';
+import { readSelection, readCurrentPage } from './reading.js';
 
 const contentEl = document.getElementById('reformattedContent');
 const highlightPaletteEl = document.getElementById('highlightPalette');
@@ -179,6 +179,11 @@ export async function loadPage(pageKey) {
   }
 }
 
+export function readCurrentPageTts() {
+  if (!contentEl) return null;
+  return readCurrentPage(contentEl);
+}
+
 function syncPageDrawerActive(pageKey) {
   if (!pageDrawerItems || !pageDrawerItems.length) return;
   pageDrawerItems.forEach((item) => {
@@ -189,7 +194,8 @@ function syncPageDrawerActive(pageKey) {
 function selectionActionHandler(action, selectedText) {
   if (!selectedText.trim()) return hideElement(selectionMenu);
   if (action === 'read') {
-    speakText(selectedText);
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) readSelection(sel.getRangeAt(0), selectedText);
     return;
   }
   showChatContext(action, selectedText);
@@ -197,6 +203,7 @@ function selectionActionHandler(action, selectedText) {
   if (sel) sel.removeAllRanges();
   hideAllFloatingMenus();
 }
+
 
 export function initLeftPanel() {
   buildHighlightPalette();
