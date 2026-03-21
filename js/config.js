@@ -14,15 +14,15 @@ export const highlightPaletteColors = [
 ];
 
 export const pageToFragmentUrl = {
-  pageBook1: 'Context/pageBook1_larf.html',
-  pageBook2: 'Context/pageBook2_larf.html',
-  pageBook3: 'Context/pageBook3_larf.html',
+  pageBook1: 'html/pageBook1_larf.html',
+  pageBook2: 'html/pageBook2_larf.html',
+  pageBook3: 'html/pageBook3_larf.html',
 };
 
 export const ragTextSources = [
-  'Context/pageBook1_larf.html',
-  'Context/pageBook2_larf.html',
-  'Context/pageBook3_larf.html',
+  'html/pageBook1_larf.html',
+  'html/pageBook2_larf.html',
+  'html/pageBook3_larf.html',
 ];
 
 export const LARF_PROMPT_URL = 'Context/prompt_LARF.txt';
