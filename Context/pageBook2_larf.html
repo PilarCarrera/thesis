@@ -1,0 +1,70 @@
+<div class="larf-page" aria-label="pageBook2 LARF">
+  <p>
+    Theorem <strong>2.4</strong> (Existence of an <strong>Eulerian path</strong>)
+    <mark style="background-color:#E2ABE24D;">
+      A <strong>connected graph</strong> G has an <strong>Eulerian path</strong> from vertex <strong>v</strong> to <strong>w</strong> (<strong>v != w</strong>)
+      if and only if <u>w are the only vertices with an odd degree</u>.
+    </mark>
+  </p>
+
+  <p>
+    <u>Proof.</u> Consider the graph <strong>G'</strong> obtained by adding the edge (<strong>w,v</strong>) to <strong>G</strong>.
+    <mark style="background-color:#E2ABE24D;">G' is connected and each vertex has an even degree</mark>,
+    so it has an Eulerian cycle (<strong>w,v,...,w</strong>). Delete the first edge
+    from this cycle to obtain the Eulerian path (<strong>v,...,w</strong>) in G.
+  </p>
+
+  <p>
+    Example <strong>2.1</strong> Looking back at Figure <strong>1.4</strong> (the graph modeling the bridges in <strong>Konigsberg</strong>),
+    you notice that there are <strong>four</strong> vertices with an odd degree.
+    <mark style="background-color:#E2ABE24D;">
+      It follows that <u>there is neither an <strong>Eulerian cycle</strong></u>, nor an <u><strong>Eulerian path</strong></u>.
+    </mark>
+  </p>
+
+  <p>
+    Definition <strong>2.13</strong> (Subgraph)
+    <mark style="background-color:#E2ABE24D;">
+      A graph (V<strong>1</strong>,E<strong>1</strong>) is a subgraph of (V,E)
+      if V<strong>1</strong> subseteq V and E<strong>1</strong> subseteq E.
+    </mark>
+  </p>
+
+  <p>
+    Definition <strong>2.14</strong> (Component of a graph)
+    <mark style="background-color:#E2ABE24D;">
+      A component C of a graph G is a maximal connected subgraph of G,
+      i.e. for any connected subgraph C' with <u>C subset C'</u>, we have that C' is not connected.
+    </mark>
+  </p>
+
+  <p>
+    Theorem <strong>2.5</strong> (Partition of a graph)
+    <mark style="background-color:#E2ABE24D;">
+      The components (V<strong>i</strong>,E<strong>i</strong>) (i = <strong>1</strong>,...,<strong>n</strong>) of a graph (V,E) form a partition
+    </mark>,
+    i.e.,
+    (V,E) = (Union_{i=<strong>1</strong>..<strong>n</strong>} V_i, Union_{i=<strong>1</strong>..<strong>n</strong>} E_i), and for any <strong>i</strong> != <strong>j</strong>,
+    V_i intersection V_j = <strong>0</strong> and E_i intersection E_j = <strong>0</strong>.
+  </p>
+
+  <p><u>Proof.</u> <mark style="background-color:#E2ABE24D;">Clearly every <strong>vertex</strong> and edge belongs to at least <strong>one</strong> component.</mark> Suppose a vertex belongs to <strong>two</strong> components a and b;
+  then the union of a and b is a <mark style="background-color:#E2ABE24D;">connected subgraph of (V,E)</mark>, so a = b.
+  Since the degree of a vertex and all incident edges belong to the same component,
+  the proof can be completed easily.</p>
+
+  <p>
+    Theorem <strong>2.5</strong> is important because it is often easier to prove properties for <strong>connected graphs</strong>:
+    <mark style="background-color:#E2ABE24D;">
+      Theorem <strong>2.5</strong> tells us that a <strong>non connected graph</strong> can be uniquely divided into
+      <u>connected components</u>.
+    </mark>
+  </p>
+
+  <p><strong>2.2</strong> Graph Representations</p>
+
+  <p>
+    Until now we have just drawn graphs. However, we often need a more formal representation of graphs,
+    e.g. because we need to write programs dealing with graphs. There is
+  </p>
+</div>

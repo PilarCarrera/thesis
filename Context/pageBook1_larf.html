@@ -1,0 +1,42 @@
+<div class="larf-page" aria-label="pageBook1 LARF">
+  <p>
+    <strong>22</strong> CHAPTER <strong>2</strong>. GRAPHS
+  </p>
+
+  <p>
+    <mark style="background-color:#E2ABE24D;">
+      Theorem <strong>2.3</strong> (Existence of an <strong>Eulerian cycle</strong>.)
+      A <strong>connected graph</strong> <strong>G(V,E)</strong> has an <strong>Eulerian cycle</strong> if and only if
+      the <strong>degree of each vertex</strong> is even.
+    </mark>
+  </p>
+
+  <p>
+    <u>The intuition behind the proof</u> is that when you arrive in a vertex, you can leave again because
+    <mark style="background-color:#E2ABE24D;">the degree is even</mark>. It therefore <mark style="background-color:#E2ABE24D;">does not matter which path you follow</mark>, as long as you don't return to
+    the starting point too soon. Even if you did, you can still <mark style="background-color:#E2ABE24D;">mend the path</mark>.
+  </p>
+
+  <p><u>Proof.</u></p>
+
+  <p>
+    =&gt;
+    In a <strong>connected graph</strong> with an <strong>Eulerian cycle</strong>, the <mark style="background-color:#E2ABE24D;">cycle connects all vertices</mark> as there is a path from
+    each vertex to each other vertex and the cycle <mark style="background-color:#E2ABE24D;">covers all paths</mark>. While traversing the cycle, we leave
+    every <strong>vertex</strong> in which we arrive, and since all edges are traversed by the cycle, the <mark style="background-color:#E2ABE24D;">degree of each vertex is even</mark>.
+  </p>
+
+  <p>
+    &lt;=&gt;
+    <u>Construct a cycle P</u>: <mark style="background-color:#E2ABE24D;">start from any vertex s, follow any edge incident on s</mark>; from then on extend
+    the partial path with any edge incident on the most recently added vertex, never using a previously used
+    edge. <u>Repeat until there are no more edges to choose from.</u> Since the degree of each vertex is even, the
+    just constructed P is a <mark style="background-color:#E2ABE24D;"><strong>cycle</strong> starting in s and arriving at the other end</mark>. If P contains all edges from
+    G, the <mark style="background-color:#E2ABE24D;">theorem is proven</mark>. Otherwise, there exists a vertex s'
+    on the path P from which an unused edge leaves (explained why!). Construct a cycle P' starting at s' not
+    using any edges from P (why is this possible?). Then add P' to P: now you have a larger cycle. One can
+    repeat the procedure until there are no more unused edges. Figure <strong>2.1</strong> illustrates the construction.
+  </p>
+
+  <img class="larf-img" src="Context/pageBook1_image.png" alt="Figure 2.1 diagram" />
+</div>
