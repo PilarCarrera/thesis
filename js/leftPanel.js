@@ -12,7 +12,6 @@ import {
   positionFixedCentered,
 } from './utils.js';
 import { showChatContext } from './chat.js';
-import { speakText } from './tts.js';
 
 const contentEl = document.getElementById('reformattedContent');
 const highlightPaletteEl = document.getElementById('highlightPalette');
@@ -20,6 +19,8 @@ const selectionMenu = document.getElementById('selectionMenu');
 const highlightMenu = document.getElementById('highlightMenu');
 const colorPickerMenu = document.getElementById('colorPickerMenu');
 const pageDrawerItems = document.querySelectorAll('[data-page-drawer]');
+const leftModeInputs = document.querySelectorAll('input[name="leftMode"]');
+const leftHighlightsToggle = document.getElementById('leftHighlights');
 
 let activeMarkForColorChange = null;
 let markIdCounter = 0;
@@ -52,6 +53,46 @@ function unwrapMark(mark) {
   const frag = document.createDocumentFragment();
   while (mark.firstChild) frag.appendChild(mark.firstChild);
   parent.replaceChild(frag, mark);
+}
+
+function unwrapElement(el) {
+  if (!el || !el.parentNode) return;
+  const parent = el.parentNode;
+  const frag = document.createDocumentFragment();
+  while (el.firstChild) frag.appendChild(el.firstChild);
+  parent.replaceChild(frag, el);
+}
+
+function unwrapAll(container, selector) {
+  if (!container) return;
+  const nodes = Array.from(container.querySelectorAll(selector));
+  nodes.forEach((node) => unwrapElement(node));
+}
+
+function getLeftMode() {
+  const checked = Array.from(leftModeInputs || []).find((input) => input.checked);
+  return checked ? checked.value : 'larf';
+}
+
+function renderContentFromRaw() {
+  if (!contentEl) return;
+  const raw = contentEl.dataset.rawHtml || '';
+  contentEl.innerHTML = raw;
+
+  const mode = getLeftMode();
+  if (mode === 'original') {
+    unwrapAll(contentEl, 'mark');
+    unwrapAll(contentEl, 'strong');
+    unwrapAll(contentEl, 'u');
+    contentEl.classList.remove('highlights-off');
+  } else {
+    const highlightsOn = leftHighlightsToggle ? leftHighlightsToggle.checked : true;
+    contentEl.classList.toggle('highlights-off', !highlightsOn);
+  }
+
+  indexMarks();
+  clearSelection();
+  hideAllFloatingMenus();
 }
 
 function setMarkColor(mark, color) {
@@ -169,10 +210,8 @@ export async function loadPage(pageKey) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const html = await res.text();
-    contentEl.innerHTML = html;
-    indexMarks();
-    clearSelection();
-    hideAllFloatingMenus();
+    contentEl.dataset.rawHtml = html;
+    renderContentFromRaw();
   } catch (err) {
     console.error('Failed to load LARF fragment:', err);
     contentEl.textContent = `Failed to load ${pageKey}. Expected: ${url}`;
@@ -188,10 +227,6 @@ function syncPageDrawerActive(pageKey) {
 
 function selectionActionHandler(action, selectedText) {
   if (!selectedText.trim()) return hideElement(selectionMenu);
-  if (action === 'read') {
-    speakText(selectedText);
-    return;
-  }
   showChatContext(action, selectedText);
   const sel = window.getSelection();
   if (sel) sel.removeAllRanges();
@@ -221,6 +256,16 @@ export function initLeftPanel() {
         clearSelection();
       }
     });
+  }
+
+  if (leftModeInputs && leftModeInputs.length) {
+    leftModeInputs.forEach((input) => {
+      input.addEventListener('change', () => renderContentFromRaw());
+    });
+  }
+
+  if (leftHighlightsToggle) {
+    leftHighlightsToggle.addEventListener('change', () => renderContentFromRaw());
   }
 
   if (contentEl) {

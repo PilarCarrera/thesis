@@ -17,9 +17,6 @@ const chatHighlights = document.getElementById('chatHighlights');
 const chatParagraphs = document.getElementById('chatParagraphs');
 const chatFormat = document.getElementById('chatFormat');
 const chatPoints = document.getElementById('chatPoints');
-const ttsVoice = document.getElementById('ttsVoice');
-const ttsHighlight = document.getElementById('ttsHighlight');
-const ttsSpeed = document.getElementById('ttsSpeed');
 
 const contextState = {
   pendingContextText: '',
@@ -39,9 +36,6 @@ function getChatSettings() {
     paragraphs: chatParagraphs ? chatParagraphs.value : '2-4 lines',
     format: chatFormat ? chatFormat.value : 'Simple wording',
     points: chatPoints ? chatPoints.value : 'Bullet points',
-    ttsVoice: ttsVoice ? ttsVoice.value : 'Female 1',
-    ttsHighlight: ttsHighlight ? ttsHighlight.value : DEFAULT_HL_COLOR,
-    ttsSpeed: ttsSpeed ? ttsSpeed.value : 'x1',
   };
 }
 
@@ -90,7 +84,6 @@ export function showChatContext(action, selectedText) {
   const t = truncate(selectedText, 180);
 
   let msg = '';
-  if (action === 'read') msg = `Read Text: ${t}`;
   if (action === 'chat') msg = `Chat about: ${t}`;
   if (action === 'summary') msg = `Summary: ${t}`;
 
@@ -107,9 +100,6 @@ function initializeSettings() {
   if (chatParagraphs) chatParagraphs.value = '2-4 lines';
   if (chatFormat) chatFormat.value = 'Simple wording';
   if (chatPoints) chatPoints.value = 'Bullet points';
-  if (ttsVoice) ttsVoice.value = 'Female 1';
-  if (ttsHighlight) ttsHighlight.value = DEFAULT_HL_COLOR;
-  if (ttsSpeed) ttsSpeed.value = 'x1';
   if (chatHighlights) chatHighlights.checked = true;
   applyChatStyle(getChatSettings());
 }
@@ -211,9 +201,6 @@ export function initChat() {
     chatParagraphs,
     chatFormat,
     chatPoints,
-    ttsVoice,
-    ttsHighlight,
-    ttsSpeed,
   ].filter(Boolean);
 
   settingsInputs.forEach((el) => {
@@ -228,22 +215,4 @@ export function initChat() {
 
 export function hideChatContextBubble() {
   if (chatContextBubble) chatContextBubble.hidden = true;
-}
-
-export function getCurrentTtsConfig() {
-  const settings = getChatSettings();
-  const rateMap = {
-    'x0.25': 0.25,
-    'x0.5': 0.5,
-    'x0.75': 0.75,
-    x1: 1,
-    'x1.25': 1.25,
-    'x1.5': 1.5,
-    'x1.75': 1.75,
-    x2: 2,
-  };
-  return {
-    voiceLabel: settings.ttsVoice,
-    rate: rateMap[settings.ttsSpeed] || 1,
-  };
 }

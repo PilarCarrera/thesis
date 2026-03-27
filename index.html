@@ -41,6 +41,23 @@
       </div>
 
       <div class="panel-body">
+        <div class="left-controls">
+          <div class="left-modes">
+            <label class="left-control">
+              <input type="radio" name="leftMode" value="larf" checked />
+              LARF
+            </label>
+            <label class="left-control">
+              <input type="radio" name="leftMode" value="original" />
+              Original
+            </label>
+          </div>
+          <label class="left-control">
+            <input id="leftHighlights" type="checkbox" checked />
+            activate highlights on the left part
+          </label>
+        </div>
+
         <div class="highlight-palette" id="highlightPalette" role="toolbar" aria-label="Highlight colors"></div>
 
         <div
@@ -51,10 +68,6 @@
         ></div>
 
         <div id="selectionMenu" class="selection-menu" hidden>
-          <button class="selection-action" type="button" data-selection-action="read">
-            <span class="sm-icon">⌂</span>
-            Read Text
-          </button>
           <button class="selection-action" type="button" data-selection-action="chat">
             <span class="sm-icon">✉</span>
             Chat
@@ -104,10 +117,6 @@
               Summary
             </button>
             <button class="action-card" data-switch="chat">
-              <span class="card-icon">⌂</span>
-              Read Text
-            </button>
-            <button class="action-card" data-switch="chat">
               <span class="card-icon">✳</span>
               Mind Map
             </button>
@@ -153,10 +162,6 @@
           <span class="mi-icon">✳</span>
           <span>Mind Map</span>
         </button>
-        <button class="menu-item" data-menu-action="tts">
-          <span class="mi-icon">🔊</span>
-          <span>TTS</span>
-        </button>
         <button class="menu-item" data-menu-action="chat">
           <span class="mi-icon">✉</span>
           <span>Chat</span>
@@ -167,7 +172,6 @@
         <div class="settings-tabs">
           <button class="settings-tab active" data-settings-tab="style">Style/Font style</button>
           <button class="settings-tab" data-settings-tab="responses">Responses</button>
-          <button class="settings-tab" data-settings-tab="tts">TTS</button>
         </div>
         <div class="settings-body" data-settings-body="style">
           <div class="setting-row">
@@ -223,51 +227,6 @@
             <select id="chatPoints" class="setting-select">
               <option>Bullet points</option>
               <option>Numbered points</option>
-            </select>
-          </div>
-        </div>
-        <div class="settings-body" data-settings-body="tts">
-          <div class="setting-row">
-            <label for="ttsVoice">Voice</label>
-            <select id="ttsVoice" class="setting-select">
-              <option>Male 1</option>
-              <option>Male 2</option>
-              <option>Male 3</option>
-              <option>Male 4</option>
-              <option>Male 5</option>
-              <option>Female 1</option>
-              <option>Female 2</option>
-              <option>Female 3</option>
-              <option>Female 4</option>
-              <option>Female 5</option>
-            </select>
-          </div>
-          <div class="setting-row">
-            <label for="ttsHighlight">Colour highlight</label>
-            <select id="ttsHighlight" class="setting-select">
-              <option value="#E2ABE24D">Pink</option>
-              <option value="#F6E27A4D">Yellow</option>
-              <option value="#7CE6B84D">Green</option>
-              <option value="#7AB7FF4D">Blue</option>
-              <option value="#FFCD7A4D">Orange</option>
-              <option value="#FF7A7A4D">Red</option>
-              <option value="#B79CFF4D">Purple</option>
-              <option value="#6FD5D84D">Teal</option>
-              <option value="#BFC7D34D">Gray</option>
-              <option value="#C8A37B4D">Brown</option>
-            </select>
-          </div>
-          <div class="setting-row">
-            <label for="ttsSpeed">Speed</label>
-            <select id="ttsSpeed" class="setting-select">
-              <option>x0.25</option>
-              <option>x0.5</option>
-              <option>x0.75</option>
-              <option>x1</option>
-              <option>x1.25</option>
-              <option>x1.5</option>
-              <option>x1.75</option>
-              <option>x2</option>
             </select>
           </div>
         </div>

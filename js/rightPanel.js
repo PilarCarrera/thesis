@@ -92,10 +92,6 @@ export function initRightPanel() {
         prefillChat('Make a summary about ');
         return;
       }
-      if (action === 'tts') {
-        prefillChat('Read the text out loud of ');
-        return;
-      }
       if (action === 'chat') {
         openChatView();
         closeFloatingMenu();
