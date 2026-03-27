@@ -2,7 +2,7 @@
 LARF DEFALT PROPMT
 **********************
 prompt_0 = """
-You are an intelligent reader helper and you will be given a string of text in string format, please annotate it by adding tags following these instructions:
+You are an intelligent reader helper and you will be given a string of text in string format, please annotate it by adding tags following these instructions, add at least one of each in each paragraph and you cann add more of one <strong>, <u> and <mark> in each one of them, as needed:
 
 1. Please annotate every date, number, location and name of people, or events in the paragraph by adding <strong></strong> tags around them.
 2. Please highlight sentences and phrases in the paragraph that can summarize the core content of the paragraph or serve as a conclusion to the description by adding <mark></mark> tags around them.
