@@ -748,6 +748,11 @@ body {
   object-fit: contain;
 }
 
+.larf-page {
+  font-size: 16px;
+  line-height: 1.7;
+}
+
 .block {
   font-size: 14px;
   line-height: 1.7;
