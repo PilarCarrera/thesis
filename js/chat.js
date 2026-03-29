@@ -1,6 +1,7 @@
 import { OPENAI_HEALTH_URL, DEFAULT_HL_COLOR } from './config.js';
 import { sanitizeResponseHtml, stripHtml, truncate } from './utils.js';
 import { callOpenAI } from './openai.js';
+import { getPageText, getAllPageTexts } from './rag.js';
 
 const rightPanel = document.querySelector('.panel.right');
 const chatThread = document.getElementById('chatThread');
@@ -10,6 +11,13 @@ const sendBtn = document.querySelector('.send');
 const plusBtn = document.querySelector('.plus');
 const floatingMenu = document.querySelector('.floating-menu');
 const chatContextBubble = document.getElementById('chatContextBubble');
+const chatContextText = chatContextBubble
+  ? chatContextBubble.querySelector('.chat-context-text')
+  : null;
+const chatContextClose = chatContextBubble
+  ? chatContextBubble.querySelector('.chat-context-close')
+  : null;
+const reformattedContent = document.getElementById('reformattedContent');
 
 const chatFontType = document.getElementById('chatFontType');
 const chatFontSize = document.getElementById('chatFontSize');
@@ -22,6 +30,103 @@ const contextState = {
   pendingContextText: '',
   pendingContextAction: '',
 };
+
+const pageLabelMap = {
+  pageBook1: 'Page 1',
+  pageBook2: 'Page 2',
+  pageBook3: 'Page 3',
+};
+
+function getCurrentPageKey() {
+  return (reformattedContent && reformattedContent.dataset.currentPage) || 'pageBook1';
+}
+
+function getCurrentPageLabel() {
+  return pageLabelMap[getCurrentPageKey()] || 'this page';
+}
+
+const stopwords = new Set([
+  'the',
+  'and',
+  'about',
+  'what',
+  'who',
+  'why',
+  'how',
+  'is',
+  'are',
+  'was',
+  'were',
+  'a',
+  'an',
+  'of',
+  'to',
+  'in',
+  'on',
+  'for',
+  'with',
+  'do',
+  'does',
+  'did',
+  'this',
+  'that',
+  'these',
+  'those',
+  'page',
+  'text',
+  'tell',
+  'me',
+  'you',
+  'your',
+  'it',
+  'its',
+  'know',
+]);
+
+function extractKeywords(text) {
+  const words = (text || '').toLowerCase().match(/[a-z0-9']+/g) || [];
+  return words.filter((w) => w.length >= 4 && !stopwords.has(w));
+}
+
+function scoreMatch(text, keywords) {
+  if (!text || !keywords.length) return 0;
+  const haystack = text.toLowerCase();
+  const unique = new Set(keywords);
+  let score = 0;
+  unique.forEach((kw) => {
+    if (haystack.includes(kw)) score += 1;
+  });
+  return score;
+}
+
+function isGeneralRequest(text) {
+  return /summary|summarize|overview|explain|describe|main points|key points|what is this page about/i.test(
+    text || ''
+  );
+}
+
+function isSubjectiveOrUnclear(text) {
+  return /do you like|do you think|what do you think|your opinion|opinion|favorite|favourite|feel about/i.test(
+    text || ''
+  );
+}
+
+function detectReferencedPage(userText) {
+  const text = (userText || '').toLowerCase();
+  if (!text) return null;
+
+  const has = (re) => re.test(text);
+  if (has(/\bpage\s*1\b/) || has(/\bpage\s*one\b/) || has(/\bfirst\s+page\b/) || has(/pagebook1/)) {
+    return 'pageBook1';
+  }
+  if (has(/\bpage\s*2\b/) || has(/\bpage\s*two\b/) || has(/\bsecond\s+page\b/) || has(/pagebook2/)) {
+    return 'pageBook2';
+  }
+  if (has(/\bpage\s*3\b/) || has(/\bpage\s*three\b/) || has(/\bthird\s+page\b/) || has(/pagebook3/)) {
+    return 'pageBook3';
+  }
+  return null;
+}
 
 function setChatEmptyVisible(visible) {
   if (!chatEmpty) return;
@@ -84,10 +189,10 @@ export function showChatContext(action, selectedText) {
   const t = truncate(selectedText, 180);
 
   let msg = '';
-  if (action === 'chat') msg = `Chat about: ${t}`;
-  if (action === 'summary') msg = `Summary: ${t}`;
+  if (action === 'chat') msg = `Context on "${t}"`;
+  if (action === 'summary') msg = `Summary context on "${t}"`;
 
-  chatContextBubble.textContent = msg;
+  if (chatContextText) chatContextText.textContent = msg;
   chatContextBubble.hidden = false;
   openChatView();
   contextState.pendingContextText = selectedText;
@@ -96,7 +201,7 @@ export function showChatContext(action, selectedText) {
 
 function initializeSettings() {
   if (chatFontType) chatFontType.value = 'Lexend';
-  if (chatFontSize) chatFontSize.value = '12';
+  if (chatFontSize) chatFontSize.value = '16';
   if (chatParagraphs) chatParagraphs.value = '2-4 lines';
   if (chatFormat) chatFormat.value = 'Simple wording';
   if (chatPoints) chatPoints.value = 'Bullet points';
@@ -120,17 +225,72 @@ async function handleChatSend() {
   chatInput.value = '';
 
   const settings = getChatSettings();
+  const currentPageKey = getCurrentPageKey();
+  const currentPageLabel = getCurrentPageLabel();
+  const referencedPageKey = detectReferencedPage(userText);
+  if (referencedPageKey && referencedPageKey !== currentPageKey) {
+    const referencedLabel = pageLabelMap[referencedPageKey] || 'that page';
+    appendMessage(
+      'assistant',
+      `This question is about text on ${referencedLabel}. Please change to ${referencedLabel}; I cannot reply to it from ${currentPageLabel}.`
+    );
+    return;
+  }
+  if (!contextState.pendingContextText && isSubjectiveOrUnclear(userText)) {
+    appendMessage(
+      'assistant',
+      '<p><mark style="background-color:#E2ABE24D;">I don&#39;t think I understood your question.</mark> <u>Please rephrase it</u> or ask something directly from the text, and I will help. :)</p>',
+      { allowHtml: true }
+    );
+    return;
+  }
+  if (!contextState.pendingContextText && !isGeneralRequest(userText)) {
+    const keywords = extractKeywords(userText);
+    if (keywords.length) {
+      const [currentText, allTexts] = await Promise.all([
+        getPageText(currentPageKey),
+        getAllPageTexts(),
+      ]);
+      const currentScore = scoreMatch(currentText, keywords);
+      let bestOtherKey = null;
+      let bestOtherScore = 0;
+      Object.entries(allTexts).forEach(([key, text]) => {
+        if (key === currentPageKey) return;
+        const score = scoreMatch(text, keywords);
+        if (score > bestOtherScore) {
+          bestOtherScore = score;
+          bestOtherKey = key;
+        }
+      });
+
+      if (bestOtherKey && bestOtherScore > currentScore && bestOtherScore >= 1) {
+        const referencedLabel = pageLabelMap[bestOtherKey] || 'that page';
+        appendMessage(
+          'assistant',
+          `This question is about text on ${referencedLabel}. Please change to ${referencedLabel}; I cannot reply to it from ${currentPageLabel}.`
+        );
+        return;
+      }
+
+      if (currentScore === 0 && bestOtherScore === 0) {
+        appendMessage(
+          'assistant',
+          '<p><mark style="background-color:#E2ABE24D;">I don&#39;t know.</mark> <u>It&#39;s not from the selected text.</u> <strong>Ask me something from the text</strong> and I will reply! :)</p>',
+          { allowHtml: true }
+        );
+        return;
+      }
+    }
+  }
   try {
-    const response = await callOpenAI(userText, settings, contextState);
+    const response = await callOpenAI(userText, settings, contextState, currentPageKey, currentPageLabel);
     appendMessage('assistant', response, { allowHtml: settings.highlightsOn });
   } catch (err) {
     const detail = err && err.message ? ` (${err.message})` : '';
     appendMessage('assistant', `Sorry, I could not reach the chat service. Please try again.${detail}`);
     console.error(err);
   } finally {
-    contextState.pendingContextText = '';
-    contextState.pendingContextAction = '';
-    if (chatContextBubble) chatContextBubble.hidden = true;
+    // keep context until user clears it
   }
 }
 
@@ -211,8 +371,18 @@ export function initChat() {
 
   if (chatThread && chatThread.children.length === 0) setChatEmptyVisible(true);
   checkServerHealth();
+
+  if (chatContextClose) {
+    chatContextClose.addEventListener('click', () => clearChatContext());
+  }
 }
 
 export function hideChatContextBubble() {
+  if (chatContextBubble) chatContextBubble.hidden = true;
+}
+
+function clearChatContext() {
+  contextState.pendingContextText = '';
+  contextState.pendingContextAction = '';
   if (chatContextBubble) chatContextBubble.hidden = true;
 }

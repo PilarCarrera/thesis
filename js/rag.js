@@ -1,4 +1,4 @@
-import { ragTextSources } from './config.js';
+import { pageToFragmentUrl } from './config.js';
 
 const ragTextCache = new Map();
 
@@ -17,17 +17,38 @@ async function fetchTextSource(url) {
   return text;
 }
 
-export async function getRagText() {
-  const chunks = [];
-  for (const url of ragTextSources) {
-    try {
-      const text = await fetchTextSource(url);
-      if (text) chunks.push(text);
-    } catch (err) {
-      console.warn('RAG text load failed:', url, err);
-    }
+export async function getPageText(pageKey) {
+  const url = pageToFragmentUrl[pageKey];
+  if (!url) return '';
+  try {
+    const text = await fetchTextSource(url);
+    return text || '';
+  } catch (err) {
+    console.warn('RAG text load failed:', url, err);
+    return '';
   }
-  const combined = chunks.join('\n\n');
-  if (combined.length <= 12000) return combined;
-  return `${combined.slice(0, 12000)}...`;
+}
+
+export async function getAllPageTexts() {
+  const entries = await Promise.all(
+    Object.keys(pageToFragmentUrl).map(async (key) => {
+      const text = await getPageText(key);
+      return [key, text];
+    })
+  );
+  return Object.fromEntries(entries);
+}
+
+export async function getRagText(pageKey) {
+  const url = pageToFragmentUrl[pageKey];
+  if (!url) return '';
+  try {
+    const text = await fetchTextSource(url);
+    if (!text) return '';
+    if (text.length <= 12000) return text;
+    return `${text.slice(0, 12000)}...`;
+  } catch (err) {
+    console.warn('RAG text load failed:', url, err);
+    return '';
+  }
 }

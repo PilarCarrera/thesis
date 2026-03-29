@@ -1,0 +1,61 @@
+# Format: pageKey<TAB>question<TAB>expected_response
+
+pageBook1	What is the symbiotic relationship described between corals and zooxanthellae?	Corals host zooxanthellae that photosynthesize for energy while corals provide protection and nutrients.
+pageBook1	Give 3 characteristics of coral reef ecosystems.	They are highly biodiverse, rely on coral-algae symbiosis, and thrive in nutrient-poor waters.
+pageBook1	What does photosynthesis provide to the coral host?	It provides energy that sustains the coral host.
+pageBook1	What does the coral provide to the algae?	Protection and access to nutrients.
+pageBook1	Why can coral reefs thrive in nutrient-poor environments?	Because the mutualistic coral-zooxanthellae relationship supplies energy and nutrients.
+pageBook1	What environmental change can trigger coral bleaching?	Elevated sea temperatures linked to climate change.
+pageBook1	What happens to zooxanthellae during bleaching?	Corals expel the algae.
+pageBook1	Why are bleached corals at higher risk of mortality?	They lose essential nutrients without zooxanthellae for too long.
+pageBook1	What is ocean acidification, and how does it affect corals?	CO2 absorption lowers carbonate ions, reducing coral calcification and weakening reefs.
+pageBook1	What role do carbonate ions play in coral calcification?	They are necessary for building coral skeletons.
+pageBook1	How does pollution affect coral reef vulnerability?	It exacerbates vulnerability alongside temperature stress.
+pageBook1	Explain how acidification compromises reef integrity.	It reduces carbonate ions, impairing calcification and skeletal maintenance.
+pageBook1	What is meant by adaptive capacity in corals?	Some corals can adjust by forming new symbioses to increase resilience.
+pageBook1	How can some corals become more heat-tolerant?	By partnering with more heat-tolerant zooxanthellae strains.
+pageBook1	Why might environmental change outpace coral adaptation?	Conditions are changing faster than reefs can adapt.
+
+pageBook2	Give 3 characteristics of glaciers.	They are vast ice accumulations, erode and shape land, and preserve climate records in ice cores.
+pageBook2	How do glaciers shape the Earth's surface?	They erode rock through abrasion and plucking and carve U-shaped valleys.
+pageBook2	What are abrasion and plucking in glacial erosion?	Processes where ice scrapes rock and pulls pieces away.
+pageBook2	What landforms are created by advancing glaciers?	Distinctive U-shaped valleys and transported sediment.
+pageBook2	What features are left behind when glaciers retreat?	Moraines and outwash plains.
+pageBook2	What are moraines and outwash plains?	Depositional features left by retreating glaciers.
+pageBook2	What do ice cores contain?	Layers of compacted snow with trapped air bubbles, particles, and isotopic signatures.
+pageBook2	How do ice cores help reconstruct past climates?	They preserve layered records of temperature and atmospheric conditions.
+pageBook2	What kinds of information can air bubbles in ice cores reveal?	Past atmospheric composition and pollutants.
+pageBook2	How do isotopic signatures help scientists?	They help reconstruct historical temperature fluctuations.
+pageBook2	Why are glaciers considered archives of climatic history?	Ice cores store layered records of past conditions.
+pageBook2	What threatens the integrity of ice-core records?	Accelerated melting from rising temperatures.
+pageBook2	How does glacier melting affect scientific interpretation of the past?	Degrades ice layers and compromises records.
+pageBook2	Why are glaciers called indicators of climate change?	Their accelerated melting reflects rising global temperatures.
+pageBook2	Why are glaciers considered irreplaceable repositories?	They store unique climatic records that are lost when melting.
+
+pageBook3	What was the impact of the printing press on book production?	It enabled rapid reproduction, lowering costs and increasing distribution.
+pageBook3	Why were books scarce before the printing press?	Texts were hand-copied, slow, error-prone, and expensive.
+pageBook3	What is movable type printing?	A method using reusable type pieces to print texts quickly.
+pageBook3	How did the printing press reduce the cost of books?	Mass production lowered production time and expense.
+pageBook3	How did the printing press affect literacy rates?	It helped increase literacy by making books more accessible.
+pageBook3	How did it change the circulation of ideas?	Ideas spread more freely across social and geographic boundaries.
+pageBook3	What role did the printing press play in the Renaissance?	It helped scholars distribute ideas widely.
+pageBook3	What role did it play in the Reformation?	It enabled reformers to reach broader audiences.
+pageBook3	Why did the printing press challenge established authorities?	Wider dissemination enabled critical debate of authorities.
+pageBook3	What concerns arose about misinformation?	Increased information flow raised concerns about misinformation.
+pageBook3	How did the printing press reshape communication and education?	It transformed knowledge production and sharing, enabling modern systems.
+pageBook3	List 3 effects of movable type printing.	Lower book costs, wider distribution, and greater circulation of ideas.
+pageBook3	Explain why handwritten copying was prone to error.	Manual copying was slow and error-prone.
+pageBook3	What does democratization of knowledge mean in this context?	Knowledge became accessible to broader populations.
+pageBook3	How did the printing press affect access to knowledge?	Books became cheaper and more widely available.
+
+# Intentional wrong-page checks (should trigger redirect or fallback)
+pageBook1	What do ice cores tell us?	This question is about text on Page 2. Please change to Page 2; I cannot reply to it from Page 1.
+pageBook1	What was the impact of the printing press on literacy?	This question is about text on Page 3. Please change to Page 3; I cannot reply to it from Page 1.
+pageBook2	What is coral bleaching?	This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 2.
+pageBook2	How do corals adapt to heat stress?	This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 2.
+pageBook3	What is ocean acidification?	This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 3.
+pageBook3	What landforms do glaciers create?	This question is about text on Page 2. Please change to Page 2; I cannot reply to it from Page 3.
+pageBook1	What role did the printing press play in the Reformation?	This question is about text on Page 3. Please change to Page 3; I cannot reply to it from Page 1.
+pageBook2	What is the symbiotic relationship between corals and zooxanthellae?	This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 2.
+pageBook3	What happens during coral bleaching?	This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 3.
+pageBook3	How do glaciers erode rock?	This question is about text on Page 2. Please change to Page 2; I cannot reply to it from Page 3.

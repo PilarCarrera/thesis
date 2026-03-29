@@ -1,0 +1,65 @@
+Manual Evaluation Template (StudyBuddy Chat)
+
+Purpose
+- Human reviewers score chat responses against a fixed rubric using a predefined test set.
+
+How To Use
+1) Prepare a test set of questions (30–100). Ensure coverage of:
+   - Summaries
+   - Definitions/explanations
+   - Comparisons
+   - Edge/ambiguous questions
+   - Off-topic or out-of-scope questions
+   - Selected-text questions
+2) For each question, record the system response.
+3) Score each response using the rubric below.
+4) Compute averages and note common failure modes.
+
+Scoring Scale (1–5)
+- 1: Poor / fails criterion
+- 2: Weak
+- 3: Adequate
+- 4: Good
+- 5: Excellent
+
+Rubric (score each criterion)
+A) Accuracy
+- Does the response correctly reflect the page/selection content?
+
+B) Relevance / Scope
+- Is the response focused only on the current page or selected text?
+- Does it avoid unrelated content?
+
+C) Completeness
+- Does it fully answer the question asked?
+
+D) Clarity
+- Is it understandable, concise, and well-structured?
+
+E) Format Compliance (LARF)
+- Does it use only allowed tags (<p>, <ul>, <ol>, <li>, <mark>, <strong>, <u>, <em>, <br>)?
+- Does it apply LARF tags correctly if required?
+
+F) Robustness / Fallbacks
+- If the question is off-topic or unclear, does it respond appropriately (e.g., "I don't know" or request clarification)?
+
+Evaluation Log (fill per question)
+- Q#:
+- Page/Selection:
+- User Question:
+- System Response:
+- Scores:
+  - Accuracy (1–5):
+  - Relevance/Scope (1–5):
+  - Completeness (1–5):
+  - Clarity (1–5):
+  - Format Compliance (1–5):
+  - Robustness (1–5):
+- Notes / Observations:
+
+Summary Metrics
+- Average score per criterion
+- Overall average score
+- Top 3 strengths
+- Top 3 weaknesses
+- Recommended fixes

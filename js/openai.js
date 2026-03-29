@@ -2,12 +2,15 @@ import { OPENAI_MODEL, OPENAI_PROXY_URL } from './config.js';
 import { getRagText } from './rag.js';
 import { loadLarfPrompt, buildSystemPrompt, buildUserPrompt } from './prompt.js';
 
-export async function callOpenAI(userText, settings, contextState) {
+export async function callOpenAI(userText, settings, contextState, pageKey, pageLabel) {
   const larfPrompt = await loadLarfPrompt();
-  const systemPrompt = buildSystemPrompt(settings, larfPrompt);
-  const ragText = await getRagText();
+  const systemPrompt = buildSystemPrompt(settings, larfPrompt, pageLabel);
+  const ragText = contextState.pendingContextText
+    ? contextState.pendingContextText
+    : await getRagText(pageKey);
 
-  const contextBlock = ragText ? `\n\nContext from the three pages:\n${ragText}` : '';
+  const contextLabel = contextState.pendingContextText ? 'the selected text' : pageLabel;
+  const contextBlock = ragText ? `\n\nContext from ${contextLabel}:\n${ragText}` : '';
   const userContent = [
     {
       type: 'input_text',

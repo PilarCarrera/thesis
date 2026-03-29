@@ -15,7 +15,7 @@
       <div class="brand-name">StudyBuddy</div>
     </div>
     <nav class="nav">
-      <a href="#features">Features</a>
+      <a href="manual_evaluation_report.html">Features</a>
       <a href="#how">How it works</a>
       <a href="#about">About Us</a>
     </nav>
@@ -35,29 +35,22 @@
         <div class="panel-title">
           <div class="title">REFORMATTED TEXT</div>
         </div>
+        <div class="left-modes left-modes--top" role="group" aria-label="Text mode">
+          <label class="left-control">
+            <input type="radio" name="leftMode" value="larf" checked />
+            LARF
+          </label>
+          <label class="left-control">
+            <input type="radio" name="leftMode" value="original" />
+            Original
+          </label>
+        </div>
         <button class="panel-mindmap" aria-label="Mind map" data-mindmap="true">
           <img src="Icons/mindmap.svg" alt="" />
         </button>
       </div>
 
       <div class="panel-body">
-        <div class="left-controls">
-          <div class="left-modes">
-            <label class="left-control">
-              <input type="radio" name="leftMode" value="larf" checked />
-              LARF
-            </label>
-            <label class="left-control">
-              <input type="radio" name="leftMode" value="original" />
-              Original
-            </label>
-          </div>
-          <label class="left-control">
-            <input id="leftHighlights" type="checkbox" checked />
-            activate highlights on the left part
-          </label>
-        </div>
-
         <div class="highlight-palette" id="highlightPalette" role="toolbar" aria-label="Highlight colors"></div>
 
         <div
@@ -98,7 +91,6 @@
       </div>
 
       <div class="panel-body chat-view">
-        <div id="chatContextBubble" class="chat-context-bubble" hidden></div>
         <div id="chatThread" class="chat-thread" aria-live="polite"></div>
         <div id="chatEmpty" class="chat-empty">Start a chat about the three pages.</div>
       </div>
@@ -143,6 +135,10 @@
       </div>
 
       <div class="chat-bar">
+        <div id="chatContextBubble" class="chat-context-bubble" hidden>
+          <span class="chat-context-text"></span>
+          <button class="chat-context-close" type="button" aria-label="Clear context">×</button>
+        </div>
         <div class="owl-mini" aria-hidden="true">
           <img src="Photos/sabiOwl.png" alt="" />
         </div>

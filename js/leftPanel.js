@@ -20,11 +20,11 @@ const highlightMenu = document.getElementById('highlightMenu');
 const colorPickerMenu = document.getElementById('colorPickerMenu');
 const pageDrawerItems = document.querySelectorAll('[data-page-drawer]');
 const leftModeInputs = document.querySelectorAll('input[name="leftMode"]');
-const leftHighlightsToggle = document.getElementById('leftHighlights');
 
 let activeMarkForColorChange = null;
 let markIdCounter = 0;
 let selectionActive = false;
+const pageHtmlCache = new Map();
 
 export function hideAllFloatingMenus() {
   hideElement(selectionMenu);
@@ -74,6 +74,14 @@ function getLeftMode() {
   return checked ? checked.value : 'larf';
 }
 
+function syncRawFromDom() {
+  if (!contentEl) return;
+  if (getLeftMode() !== 'larf') return;
+  contentEl.dataset.rawHtml = contentEl.innerHTML;
+  const pageKey = contentEl.dataset.currentPage;
+  if (pageKey) pageHtmlCache.set(pageKey, contentEl.dataset.rawHtml);
+}
+
 function renderContentFromRaw() {
   if (!contentEl) return;
   const raw = contentEl.dataset.rawHtml || '';
@@ -84,10 +92,8 @@ function renderContentFromRaw() {
     unwrapAll(contentEl, 'mark');
     unwrapAll(contentEl, 'strong');
     unwrapAll(contentEl, 'u');
-    contentEl.classList.remove('highlights-off');
   } else {
-    const highlightsOn = leftHighlightsToggle ? leftHighlightsToggle.checked : true;
-    contentEl.classList.toggle('highlights-off', !highlightsOn);
+    // LARF mode keeps original highlights.
   }
 
   indexMarks();
@@ -99,6 +105,7 @@ function setMarkColor(mark, color) {
   if (!mark) return;
   mark.style.backgroundColor = color;
   mark.dataset.hlColor = color;
+  syncRawFromDom();
 }
 
 function buildHighlightPalette() {
@@ -149,8 +156,9 @@ function maybeShowSelectionMenu() {
 
   const anchorMark = getClosestMark(sel.anchorNode);
   const focusMark = getClosestMark(sel.focusNode);
-  if (anchorMark || focusMark) {
-    return hideElement(selectionMenu);
+  if (anchorMark && focusMark && anchorMark === focusMark) {
+    const withinMark = anchorMark.contains(range.commonAncestorContainer);
+    if (withinMark) return hideElement(selectionMenu);
   }
 
   const selectedText = sel.toString().trim();
@@ -193,11 +201,17 @@ function wrapSelectionInMark(color) {
 
   sel.removeAllRanges();
   hideElement(selectionMenu);
+  syncRawFromDom();
   return true;
 }
 
 export async function loadPage(pageKey) {
   if (!contentEl) return;
+  const currentKey = contentEl.dataset.currentPage;
+  if (currentKey) {
+    const rawHtml = contentEl.dataset.rawHtml;
+    if (rawHtml) pageHtmlCache.set(currentKey, rawHtml);
+  }
   const url = pageToFragmentUrl[pageKey];
   if (!url) return;
 
@@ -207,6 +221,12 @@ export async function loadPage(pageKey) {
   syncPageDrawerActive(pageKey);
 
   try {
+    const cached = pageHtmlCache.get(pageKey);
+    if (cached) {
+      contentEl.dataset.rawHtml = cached;
+      renderContentFromRaw();
+      return;
+    }
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const html = await res.text();
@@ -262,10 +282,6 @@ export function initLeftPanel() {
     leftModeInputs.forEach((input) => {
       input.addEventListener('change', () => renderContentFromRaw());
     });
-  }
-
-  if (leftHighlightsToggle) {
-    leftHighlightsToggle.addEventListener('change', () => renderContentFromRaw());
   }
 
   if (contentEl) {
@@ -329,6 +345,7 @@ export function initLeftPanel() {
         unwrapMark(mark);
         hideAllFloatingMenus();
         indexMarks();
+        syncRawFromDom();
         return;
       }
 
