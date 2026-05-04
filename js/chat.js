@@ -35,7 +35,6 @@ const contextState = {
 const pageLabelMap = {
   pageBook1: 'Page 1',
   pageBook2: 'Page 2',
-  pageBook3: 'Page 3',
 };
 
 function getCurrentPageKey() {
@@ -123,9 +122,6 @@ function detectReferencedPage(userText) {
   if (has(/\bpage\s*2\b/) || has(/\bpage\s*two\b/) || has(/\bsecond\s+page\b/) || has(/pagebook2/)) {
     return 'pageBook2';
   }
-  if (has(/\bpage\s*3\b/) || has(/\bpage\s*three\b/) || has(/\bthird\s+page\b/) || has(/pagebook3/)) {
-    return 'pageBook3';
-  }
   return null;
 }
 
@@ -189,21 +185,19 @@ function getCitationPopup() {
 
 function showCitationPopup(refEl, citations, source) {
   const popup = getCitationPopup();
-  popup.querySelector('.citation-popup-label').textContent = `📖 From: ${source}`;
+  popup.querySelector('.citation-popup-label').textContent = `📖 Found in: ${source}`;
 
   const body = popup.querySelector('.citation-popup-body');
   body.innerHTML = '';
-  citations.forEach((c) => {
-    const block = document.createElement('div');
-    block.className = 'citation-popup-text';
-    block.textContent = `"${c}"`;
-    body.appendChild(block);
-  });
+  const msg = document.createElement('p');
+  msg.className = 'citation-popup-text';
+  msg.textContent = 'The relevant passage has been highlighted in the text on the left — that\'s where this answer comes from! 👈';
+  body.appendChild(msg);
 
   popup.hidden = false;
 
   const rect = refEl.getBoundingClientRect();
-  const popupW = 380;
+  const popupW = 340;
   let left = rect.left + rect.width / 2 - popupW / 2;
   left = Math.max(8, Math.min(left, window.innerWidth - popupW - 8));
   popup.style.left = `${left}px`;
@@ -216,6 +210,20 @@ function showCitationPopup(refEl, citations, source) {
 function hideCitationPopup() {
   if (citationPopup) citationPopup.hidden = true;
   clearCitationHighlight();
+}
+
+function isUnknownResponse(text) {
+  const plain = (text || '').replace(/<[^>]+>/g, '').toLowerCase();
+  return (
+    /i don['']t know/i.test(plain) ||
+    /i do not know/i.test(plain) ||
+    /not from the selected text/i.test(plain) ||
+    /not from this text/i.test(plain) ||
+    /not in the text/i.test(plain) ||
+    /not mentioned in/i.test(plain) ||
+    /ask me something from the text/i.test(plain) ||
+    /cannot find/i.test(plain)
+  );
 }
 
 function appendMessage(role, content, options = {}) {
@@ -234,7 +242,7 @@ function appendMessage(role, content, options = {}) {
   } else {
     msg.textContent = stripHtml(content);
   }
-  if (role === 'assistant' && options.citations && options.citations.length) {
+  if (role === 'assistant' && options.citations && options.citations.length && !isUnknownResponse(content)) {
     const ref = document.createElement('button');
     ref.className = 'chat-ref';
     ref.type = 'button';

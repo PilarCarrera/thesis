@@ -265,24 +265,6 @@ body {
   object-fit: contain;
 }
 
-.panel-mindmap {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: none;
-  background: #f6e6f8;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  padding: 0;
-}
-
-.panel-mindmap img {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-}
-
 .page-picker {
   position: absolute;
   left: 22px;
@@ -487,67 +469,6 @@ body {
   cursor: pointer;
 }
 
-.mindmap-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 30, 50, 0.35);
-  display: none;
-  z-index: 60;
-}
-
-.mindmap-modal[aria-hidden="false"] {
-  display: block;
-}
-
-.mindmap-modal-inner {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(900px, calc(100vw - 36px));
-  background: #ffffff;
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-  padding: 18px;
-}
-
-.mindmap-close {
-  position: absolute;
-  right: 16px;
-  top: 16px;
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  border: 1px solid #dbe7f7;
-  background: #f7fbff;
-  cursor: pointer;
-  font-weight: 700;
-  color: #2e4057;
-}
-
-.mindmap-image-wrap {
-  padding-top: 8px;
-}
-
-.mindmap-image {
-  width: 100%;
-  height: auto;
-  display: block;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-}
-
-.mindmap-download {
-  display: inline-block;
-  margin-top: 14px;
-  background: #eaf4ff;
-  border: 1px solid #b6d2ee;
-  color: #2f5f8f;
-  padding: 10px 14px;
-  border-radius: 14px;
-  text-decoration: none;
-  font-weight: 600;
-}
 
 .panel-lightbulb {
   width: 36px;
@@ -688,9 +609,9 @@ body {
 
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
   gap: 18px;
-  max-width: 520px;
+  max-width: 320px;
   margin: 28px auto 0;
 }
 

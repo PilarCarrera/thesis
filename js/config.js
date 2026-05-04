@@ -16,13 +16,11 @@ export const highlightPaletteColors = [
 export const pageToFragmentUrl = {
   pageBook1: 'html/pageBook1_larf.html',
   pageBook2: 'html/pageBook2_larf.html',
-  pageBook3: 'html/pageBook3_larf.html',
 };
 
 export const ragTextSources = [
   'html/pageBook1_larf.html',
   'html/pageBook2_larf.html',
-  'html/pageBook3_larf.html',
 ];
 
 export const LARF_PROMPT_URL = 'Context/prompt_LARF.txt';
