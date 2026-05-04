@@ -253,6 +253,109 @@ function selectionActionHandler(action, selectedText) {
   hideAllFloatingMenus();
 }
 
+function findTextRange(container, searchText) {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  if (!nodes.length) return null;
+
+  // Build rawText and a character-level map to node/offset
+  let rawText = '';
+  const posMap = []; // posMap[i] = { nodeIdx, offset }
+  for (let ni = 0; ni < nodes.length; ni++) {
+    const t = nodes[ni].textContent;
+    for (let j = 0; j < t.length; j++) posMap.push({ nodeIdx: ni, offset: j });
+    rawText += t;
+  }
+
+  // Build whitespace-normalised text with normPos→rawPos mapping
+  let normText = '';
+  const normToRaw = [];
+  let prevSpace = true;
+  for (let ri = 0; ri < rawText.length; ri++) {
+    const ch = rawText[ri];
+    if (/\s/.test(ch)) {
+      if (!prevSpace) { normToRaw.push(ri); normText += ' '; prevSpace = true; }
+    } else {
+      normToRaw.push(ri); normText += ch; prevSpace = false;
+    }
+  }
+
+  const normSearch = searchText.replace(/\s+/g, ' ').trim();
+  let matchIdx = normText.indexOf(normSearch);
+  let matchLen = normSearch.length;
+  if (matchIdx === -1) {
+    const snippet = normSearch.slice(0, 60);
+    matchIdx = normText.indexOf(snippet);
+    matchLen = snippet.length;
+  }
+  if (matchIdx === -1) return null;
+
+  const rawStart = normToRaw[matchIdx];
+  const rawEnd = normToRaw[Math.min(matchIdx + matchLen - 1, normToRaw.length - 1)] + 1;
+
+  const sp = posMap[rawStart];
+  const ep = posMap[Math.min(rawEnd - 1, posMap.length - 1)];
+  if (!sp || !ep) return null;
+
+  try {
+    const r = document.createRange();
+    r.setStart(nodes[sp.nodeIdx], sp.offset);
+    r.setEnd(nodes[ep.nodeIdx], ep.offset + 1);
+    return r;
+  } catch {
+    return null;
+  }
+}
+
+export function clearCitationHighlight() {
+  if (typeof CSS !== 'undefined' && CSS.highlights) CSS.highlights.delete('citation');
+}
+
+function expandRangeToParagraph(range) {
+  let el = range.startContainer;
+  if (el.nodeType === Node.TEXT_NODE) el = el.parentElement;
+  while (el && el !== contentEl && !['P', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(el.tagName)) {
+    el = el.parentElement;
+  }
+  if (!el || el === contentEl || !contentEl.contains(el)) return range;
+  try {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    return r;
+  } catch {
+    return range;
+  }
+}
+
+export function highlightCitationText(searchTexts) {
+  clearCitationHighlight();
+  if (!contentEl || !searchTexts) return;
+  const texts = Array.isArray(searchTexts) ? searchTexts : [searchTexts];
+  const ranges = texts
+    .map((t) => {
+      const r = findTextRange(contentEl, t);
+      return r ? expandRangeToParagraph(r) : null;
+    })
+    .filter(Boolean);
+  if (!ranges.length) return;
+  try {
+    const anchorEl = ranges[0].startContainer.parentElement;
+    const scrollContainer = contentEl.closest('.panel-body');
+    if (anchorEl && scrollContainer) {
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const anchorRect = anchorEl.getBoundingClientRect();
+      const targetTop = scrollContainer.scrollTop + (anchorRect.top - containerRect.top) - 12;
+      scrollContainer.scrollTo({ top: Math.max(targetTop, 0), behavior: 'smooth' });
+    } else {
+      anchorEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  } catch { /* ignore */ }
+  if (typeof CSS !== 'undefined' && CSS.highlights) {
+    CSS.highlights.set('citation', new Highlight(...ranges));
+  }
+}
+
 export function initLeftPanel() {
   buildHighlightPalette();
   hideAllFloatingMenus();

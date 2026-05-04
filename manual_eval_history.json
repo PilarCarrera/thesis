@@ -1,0 +1,41 @@
+[
+  {
+    "ok": true,
+    "returncode": 0,
+    "duration_seconds": 162.67,
+    "mode": "single",
+    "config": {
+      "model": "gpt-4.1",
+      "temperature": 0.2,
+      "prompt_preset": "baseline"
+    },
+    "auto_avg": 4.04,
+    "timestamp": "2026-04-27 15:59:00"
+  },
+  {
+    "ok": true,
+    "returncode": 0,
+    "duration_seconds": 179.54,
+    "mode": "single",
+    "config": {
+      "model": "gpt-4.1-mini",
+      "temperature": 0.2,
+      "prompt_preset": "baseline"
+    },
+    "auto_avg": 3.96,
+    "timestamp": "2026-04-27 16:09:46"
+  },
+  {
+    "ok": true,
+    "returncode": 0,
+    "duration_seconds": 170.54,
+    "mode": "single",
+    "config": {
+      "model": "gpt-4.1",
+      "temperature": 0.2,
+      "prompt_preset": "baseline"
+    },
+    "auto_avg": 4.04,
+    "timestamp": "2026-04-27 16:13:40"
+  }
+]

@@ -1,4 +1,4 @@
-import { openChatView, prefillChat, closeFloatingMenu } from './chat.js';
+import { openChatView, closeFloatingMenu, appendAssistantMessage } from './chat.js';
 
 const rightPanel = document.querySelector('.panel.right');
 const viewSwitchers = document.querySelectorAll('[data-switch]');
@@ -11,6 +11,11 @@ const mindMapModal = document.getElementById('mindMapModal');
 const mindMapCloseBtn = document.querySelector('[data-mindmap-close="true"]');
 const floatingMenu = document.querySelector('.floating-menu');
 const floatingMenuItems = document.querySelectorAll('[data-menu-action]');
+const welcomeActionButtons = document.querySelectorAll('[data-welcome-action]');
+const summaryHelpHtml =
+  '<p><mark style="background-color:#E2ABE24D;">Select and highlight a part of the text on the left</mark>, then press <strong>Summary</strong> to get a summary of that part.</p>';
+const chatHelpHtml =
+  '<p>You can ask any question here. You can also <strong>highlight a specific part on the left</strong> and press <strong>Chat</strong> to ask about only that part.</p>';
 
 function openMindMap() {
   if (!mindMapModal) return;
@@ -47,6 +52,23 @@ export function initRightPanel() {
     viewSwitchers.forEach((btn) => {
       btn.addEventListener('click', () => {
         rightPanel.dataset.view = btn.dataset.switch || 'chat';
+      });
+    });
+  }
+
+  if (welcomeActionButtons.length) {
+    welcomeActionButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.welcomeAction;
+        if (action === 'summary') {
+          openChatView();
+          appendAssistantMessage(summaryHelpHtml, { allowHtml: true, className: 'chat-info-note' });
+          return;
+        }
+        if (action === 'chat') {
+          openChatView();
+          appendAssistantMessage(chatHelpHtml, { allowHtml: true, className: 'chat-info-note' });
+        }
       });
     });
   }
@@ -89,11 +111,14 @@ export function initRightPanel() {
         return;
       }
       if (action === 'summary') {
-        prefillChat('Make a summary about ');
+        openChatView();
+        appendAssistantMessage(summaryHelpHtml, { allowHtml: true, className: 'chat-info-note' });
+        closeFloatingMenu();
         return;
       }
       if (action === 'chat') {
         openChatView();
+        appendAssistantMessage(chatHelpHtml, { allowHtml: true, className: 'chat-info-note' });
         closeFloatingMenu();
       }
     });

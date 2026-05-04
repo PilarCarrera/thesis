@@ -2,6 +2,15 @@ import { OPENAI_MODEL, OPENAI_PROXY_URL } from './config.js';
 import { getRagText } from './rag.js';
 import { loadLarfPrompt, buildSystemPrompt, buildUserPrompt } from './prompt.js';
 
+function parseCitation(rawText) {
+  const matches = [...rawText.matchAll(/<cite>([\s\S]*?)<\/cite>/gi)];
+  const citations = matches
+    .map((m) => m[1].replace(/<[^>]+>/g, '').trim())
+    .filter(Boolean);
+  const text = rawText.replace(/<cite>[\s\S]*?<\/cite>/gi, '').trim();
+  return { text, citations };
+}
+
 export async function callOpenAI(userText, settings, contextState, pageKey, pageLabel) {
   const larfPrompt = await loadLarfPrompt();
   const systemPrompt = buildSystemPrompt(settings, larfPrompt, pageLabel);
@@ -55,11 +64,10 @@ export async function callOpenAI(userText, settings, contextState, pageKey, page
   }
 
   const data = await res.json();
+  let rawText = '';
   if (typeof data.output_text === 'string' && data.output_text.trim()) {
-    return data.output_text.trim();
-  }
-
-  if (Array.isArray(data.output)) {
+    rawText = data.output_text.trim();
+  } else if (Array.isArray(data.output)) {
     const textParts = [];
     data.output.forEach((item) => {
       if (Array.isArray(item.content)) {
@@ -68,8 +76,13 @@ export async function callOpenAI(userText, settings, contextState, pageKey, page
         });
       }
     });
-    if (textParts.length) return textParts.join('\n').trim();
+    rawText = textParts.join('\n').trim();
   }
 
-  return 'I could not generate a response from the provided pages.';
+  const { text, citations } = parseCitation(rawText);
+  return {
+    text: text || 'I could not generate a response from the provided pages.',
+    source: contextLabel,
+    citations,
+  };
 }

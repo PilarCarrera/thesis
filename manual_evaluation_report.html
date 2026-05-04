@@ -5,381 +5,350 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manual Evaluation Report</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 24px; color: #1f2d3d; }
+    :root {
+      --bg: #f8fbff;
+      --line: #d8e0ea;
+      --ink: #1f2d3d;
+      --muted: #4a5b70;
+      --accent: #2f5f8f;
+      --warn: #a26700;
+      --warn-bg: #fff6d9;
+      --bad-bg: #ffe8e8;
+    }
+    body { font-family: Arial, sans-serif; margin: 24px; color: var(--ink); background: var(--bg); }
     h1, h2 { margin: 0 0 8px; }
-    .note { color: #4a5b70; font-size: 13px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-    th, td { border: 1px solid #d8e0ea; padding: 8px 10px; vertical-align: top; }
-    th { background: #f4f7fb; text-align: left; }
+    .note { color: var(--muted); font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; background: #fff; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+    th { background: #edf4fb; text-align: left; position: sticky; top: 0; z-index: 1; }
     .resp p { margin: 0 0 8px; }
     .expected { color: #2a3b4f; }
-    .controls { display: flex; gap: 12px; align-items: center; margin: 12px 0; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0; }
+    .control-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+    button { border: 1px solid #bdd0e6; background: #eaf3fd; color: #1d4770; border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+    button:hover { background: #deecfb; }
+    button:disabled { opacity: .6; cursor: default; }
+    select { border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; background: #fff; }
     .score-input { width: 64px; }
-    .summary { margin-top: 12px; font-size: 14px; }
+    .summary { font-size: 14px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 8px; margin: 8px 0 14px; }
+    .summary-box { border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 10px; }
+    .summary-box .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .summary-box .value { font-size: 18px; font-weight: 700; }
+    tr[data-row-state="warn"] { background: var(--warn-bg); }
+    tr[data-row-state="bad"] { background: var(--bad-bg); }
+    #runStatus { min-height: 20px; color: var(--muted); }
+    .progress-wrap { margin: 6px 0 10px; display: none; }
+    .progress-track { width: 100%; height: 12px; border-radius: 999px; background: #e7eef6; overflow: hidden; border: 1px solid var(--line); }
+    .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #73a7dd, #2f5f8f); transition: width .3s ease; }
+    .progress-meta { margin-top: 6px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; }
+    .progress-question { margin-top: 4px; font-size: 12px; color: #2f4d6d; }
+    #runLogs { margin-top: 8px; white-space: pre-wrap; font-size: 12px; background: #0f1720; color: #d6e2f1; border-radius: 8px; padding: 10px; display: none; }
+    @media (max-width: 1100px) {
+      .summary-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+    }
   </style>
 </head>
 <body>
   <h1>Manual Evaluation Report</h1>
-  <p class="note">Generated from the local RAG responses. Questions and responses are auto-filled when you run <code>tools/run_manual_eval.py</code>. Fill scores (1–5) manually.</p>
+  <p class="note">Generated from the local RAG responses. Use <strong>Run Evaluation</strong> to refresh this page from the current model behavior. Fill scores (1–5) manually.</p>
+  <p class="note">Generated at: <code id="generatedAt">2026-04-27 16:13:40</code></p>
   <div class="section">
     <h2>RAG Parameters</h2>
     <ul>
-      <li>Model: gpt-4.1-mini</li>
+      <li>Model: gpt-4.1</li>
       <li>Temperature: 0.2</li>
       <li>Context: single page text (per question)</li>
-      <li>Prompt: LARF + StudyBuddy system constraints</li>
+      <li>Prompt: baseline + LARF + StudyBuddy system constraints</li>
     </ul>
   </div>
 
   <div class="controls">
-    <button id="calcScore">Calculate score</button>
-    <div id="scoreResult" class="summary"></div>
-    <div class="summary">Auto average: 3.22</div>
+    <button id="runEval">Run Evaluation</button>
+    <button id="runSweep">Run Sweep</button>
+    <label class="control-inline">Model
+      <input id="runModel" type="text" value="gpt-4.1" style="width:160px;" />
+    </label>
+    <label class="control-inline">Temp
+      <input id="runTemp" type="number" min="0" max="2" step="0.1" value="0.2" style="width:80px;" />
+    </label>
+    <label class="control-inline">Prompt
+      <select id="runPrompt">
+        <option value="baseline">baseline</option>
+        <option value="strict">strict</option>
+        <option value="teaching">teaching</option>
+      </select>
+    </label>
+    <label class="control-inline">Sweep Temps
+      <input id="sweepTemps" type="text" value="0.0,0.2,0.5" style="width:120px;" />
+    </label>
+    <label class="control-inline">Sweep Prompts
+      <input id="sweepPrompts" type="text" value="baseline,strict,teaching" style="width:190px;" />
+    </label>
   </div>
 
-  <table>
+  <div class="summary-grid">
+    <div class="summary-box"><div class="label">Auto Average</div><div class="value" id="autoAvg">4.04</div></div>
+  </div>
+  <div id="runStatus" class="summary"></div>
+  <div id="progressWrap" class="progress-wrap">
+    <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+    <div class="progress-meta">
+      <span id="progressText">0%</span>
+      <span id="progressCounts">0/0</span>
+      <span id="progressElapsed">0.0s</span>
+    </div>
+    <div id="progressQuestion" class="progress-question"></div>
+  </div>
+  <pre id="runLogs"></pre>
+
+  <h2>Run History</h2>
+  <table id="historyTable">
     <thead>
       <tr>
-        <th>Q#</th>
-        <th>Page</th>
-        <th>User Question</th>
-        <th>System Response</th>
-        <th>Expected Response</th>
-        <th>Auto Score</th>
-        <th>Score (1–5)</th>
+        <th>Timestamp</th>
+        <th>Mode</th>
+        <th>Model</th>
+        <th>Temp</th>
+        <th>Prompt</th>
+        <th>Auto Avg</th>
+        <th>Duration (s)</th>
+        <th>Status</th>
       </tr>
     </thead>
-    <tbody>
-<tr>
-        <th>Q#</th>
-        <th>Page</th>
-        <th>User Question</th>
-        <th>System Response</th>
-        <th>Expected Response</th>
-        <th>Auto Score</th>
-        <th>Score (1–5)</th>
-      </tr>
-<tr><td>1</td><td>pageBook1</td><td>What is the symbiotic relationship described between corals and zooxanthellae?</td><td class="resp"><p><mark><strong>Coral reef ecosystems</strong> depend on a <strong>fragile symbiotic relationship</strong> between <strong>reef-building corals</strong> and <strong>microscopic algae called zooxanthellae</strong>.</mark></p>
-
-<p><mark>The zooxanthellae live within the coral's tissues and perform photosynthesis, converting sunlight into energy that sustains the coral host.</mark> <strong>The coral, in return, provides the algae with protection and access to nutrients.</strong></p>
-
-<p><mark>This mutualistic interaction allows coral reefs to thrive in nutrient-poor marine environments where few other organisms could survive.</mark> 🌞🐠</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Corals host zooxanthellae that photosynthesize for energy while corals provide protection and nutrients.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>2</td><td>pageBook1</td><td>Give 3 characteristics of coral reef ecosystems.</td><td class="resp"><p><mark><strong>Coral reef ecosystems</strong> are among the most biologically diverse environments on Earth</mark>, yet their persistence depends on a <u>remarkably fragile symbiotic relationship</u>.</p>
-
-<p><mark>Reef-building corals host microscopic algae, known as <strong>zooxanthellae</strong>, within their tissues.</mark> These algae perform photosynthesis, converting sunlight into energy that sustains the coral host, while the coral provides the algae with protection and access to nutrients.</p>
-
-<p><mark>This mutualistic interaction enables coral reefs to thrive in nutrient-poor marine environments where few other organisms could survive.</mark></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>They are highly biodiverse, rely on coral-algae symbiosis, and thrive in nutrient-poor waters.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>3</td><td>pageBook1</td><td>What does photosynthesis provide to the coral host?</td><td class="resp"><p><mark><strong>Photosynthesis provides energy that sustains the coral host</strong></mark> by converting sunlight into energy through the microscopic algae called <strong>zooxanthellae</strong> living within coral tissues.</p>
-
-<p>This energy is essential for the coral's survival, especially in nutrient-poor marine environments where few other organisms could live.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>It provides energy that sustains the coral host.</u></mark></p></td>
-        <td class="auto-score">5</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>4</td><td>pageBook1</td><td>What does the coral provide to the algae?</td><td class="resp"><p><mark>Coral provides the algae with protection and access to nutrients.</mark> 🌿</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Protection and access to nutrients.</u></mark></p></td>
-        <td class="auto-score">5</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>5</td><td>pageBook1</td><td>Why can coral reefs thrive in nutrient-poor environments?</td><td class="resp"><p><mark><strong>Coral reefs thrive in nutrient-poor marine environments</strong> because of a <strong>remarkably fragile symbiotic relationship</strong> between reef-building corals and microscopic algae called <strong>zooxanthellae</strong>.</mark></p>
-
-<p><mark>The zooxanthellae perform photosynthesis, converting sunlight into energy that sustains the coral host,</mark> while the coral provides the algae with protection and access to nutrients.</p>
-
-<p><mark>This mutualistic interaction enables coral reefs to survive where few other organisms could.</mark> 🌞🐠</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Because the mutualistic coral-zooxanthellae relationship supplies energy and nutrients.</u></mark></p></td>
-        <td class="auto-score">5</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>6</td><td>pageBook1</td><td>What environmental change can trigger coral bleaching?</td><td class="resp"><p><mark>Elevated sea temperatures</mark>, often associated with climate change, <strong>can disrupt the photosynthetic processes of zooxanthellae</strong>, leading to the production of harmful byproducts. <u>In response, corals expel these algae, a phenomenon known as coral bleaching.</u></p>
-
-<p><mark>This environmental change—elevated sea temperatures—can trigger coral bleaching.</mark> 🌡️🐠</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Elevated sea temperatures linked to climate change.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>7</td><td>pageBook1</td><td>What happens to zooxanthellae during bleaching?</td><td class="resp"><p><mark><strong>During bleaching, corals expel zooxanthellae</strong></mark>, the microscopic algae living within their tissues.</p>
-
-<p><mark>This happens because elevated sea temperatures disrupt the photosynthesis of zooxanthellae, causing them to produce harmful byproducts.</mark></p>
-
-<p><u>When corals lose zooxanthellae, they lose essential nutrients</u>, which increases their risk of death if the algae do not return.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Corals expel the algae.</u></mark></p></td>
-        <td class="auto-score">5</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>8</td><td>pageBook1</td><td>Why are bleached corals at higher risk of mortality?</td><td class="resp"><p><mark>Bleached corals are at higher risk of mortality because the prolonged absence of zooxanthellae deprives them of essential nutrients</mark>, which significantly increases mortality rates.</p>
-
-<p><strong>Coral bleaching</strong> occurs when <strong>elevated sea temperatures</strong> disrupt the photosynthetic processes of <strong>zooxanthellae</strong>, causing corals to expel these algae.</p>
-
-<p><mark>This mutualistic relationship is crucial because zooxanthellae perform photosynthesis, converting sunlight into energy that sustains the coral host.</mark> Without the algae, corals lose their main energy source.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>They lose essential nutrients without zooxanthellae for too long.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>9</td><td>pageBook1</td><td>What is ocean acidification, and how does it affect corals?</td><td class="resp"><p><mark><strong>Ocean acidification</strong> is caused by increased absorption of atmospheric carbon dioxide</mark>, which <mark>reduces the availability of carbonate ions necessary for coral calcification</mark>.</p>
-
-<p><mark>This <strong>impairs the ability of corals to build and maintain their skeletal structures</strong></mark>, <u>further compromising reef integrity</u>.</p>
-
-<p><mark>Ocean acidification, along with pollution, exacerbates the vulnerability of coral reefs</mark>, making it harder for them to survive environmental changes.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>CO2 absorption lowers carbonate ions, reducing coral calcification and weakening reefs.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>10</td><td>pageBook1</td><td>What role do carbonate ions play in coral calcification?</td><td class="resp"><p><mark style="background-color:#E2ABE24D;">Carbonate ions are necessary for coral calcification</mark>.<br><strong>Ocean acidification</strong>, caused by increased absorption of atmospheric carbon dioxide, <mark style="background-color:#E2ABE24D;">reduces the availability of carbonate ions</mark>.<br><u>This reduction impairs the ability of corals to build and maintain their skeletal structures</u>, which <mark style="background-color:#E2ABE24D;">compromises reef integrity</mark>.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>They are necessary for building coral skeletons.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>11</td><td>pageBook1</td><td>How does pollution affect coral reef vulnerability?</td><td class="resp"><p><mark>Pollution increases the vulnerability of coral reefs by exacerbating environmental stress.</mark> It adds to the challenges corals face alongside elevated sea temperatures and ocean acidification.</p>
-
-<p><strong>Pollution</strong> harms the delicate symbiotic relationship between corals and <strong>zooxanthellae</strong>, which is essential for coral survival.</p>
-
-<p><mark>This disruption weakens corals' ability to maintain their skeletal structures and survive in nutrient-poor environments.</mark> As a result, coral reefs become more fragile and susceptible to damage and death.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>It exacerbates vulnerability alongside temperature stress.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>12</td><td>pageBook1</td><td>Explain how acidification compromises reef integrity.</td><td class="resp"><p><mark style="background-color:#E2ABE24D;">Acidification compromises reef integrity by reducing the availability of carbonate ions necessary for coral calcification.</mark> <strong>This impairs the ability of corals to build and maintain their skeletal structures</strong>, which are essential for the reef's strength and stability.</p>
-
-<p><mark style="background-color:#E2ABE24D;">As a result, the reef becomes weaker and more vulnerable to damage.</mark> This process is caused by increased absorption of atmospheric <strong>carbon dioxide</strong>, leading to ocean acidification.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>It reduces carbonate ions, impairing calcification and skeletal maintenance.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>13</td><td>pageBook1</td><td>What is meant by adaptive capacity in corals?</td><td class="resp"><p><mark><strong>Adaptive capacity</strong> in corals refers to their ability to <strong>establish symbioses with more heat-tolerant strains of zooxanthellae</strong>, which <strong>enhances their resilience to thermal stress</strong>.</mark> 🌡️</p>
-
-<p><u>This means some coral species can adjust their relationships with algae to better survive higher temperatures.</u> However, <mark>the rapid pace of environmental changes may be too fast for corals to keep up with, threatening their survival.</mark> 🐠</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Some corals can adjust by forming new symbioses to increase resilience.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>14</td><td>pageBook1</td><td>How can some corals become more heat-tolerant?</td><td class="resp"><p><mark><strong>Certain corals can establish symbioses with more heat-tolerant strains of zooxanthellae, enhancing their resilience to thermal stress.</strong></mark> This means that <mark>some corals become more heat-tolerant by hosting algae that can better survive higher temperatures.</mark></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>By partnering with more heat-tolerant zooxanthellae strains.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>15</td><td>pageBook1</td><td>Why might environmental change outpace coral adaptation?</td><td class="resp"><p><mark><strong>Environmental change might outpace coral adaptation</strong> because the <strong>rate at which environmental conditions are changing</strong> is very fast.</mark> </p>
-
-<p><mark>Although some corals can adapt by forming partnerships with more heat-tolerant algae, this <u>adaptive capacity may not be enough to keep up with rapid changes</u>.</mark> </p>
-
-<p><strong>Elevated sea temperatures</strong>, <strong>ocean acidification</strong>, and <strong>pollution</strong> all increase stress on corals, making it harder for them to survive and adapt quickly.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Conditions are changing faster than reefs can adapt.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>16</td><td>pageBook2</td><td>Give 3 characteristics of glaciers.</td><td class="resp"><p><mark><strong>Glaciers</strong> are vast accumulations of ice formed over centuries</mark>, serving as both sculptors of the Earth's surface and archives of climatic history.</p>
-
-<p><mark>They erode underlying rock through processes such as abrasion and plucking, carving distinctive U-shaped valleys</mark> and transporting sediment across considerable distances.</p>
-
-<p><mark>Glaciers preserve invaluable records of atmospheric conditions</mark> through ice cores that contain layers of compacted snow trapping air bubbles, particulate matter, and isotopic signatures, allowing scientists to reconstruct historical climate data.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>They are vast ice accumulations, erode and shape land, and preserve climate records in ice cores.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>17</td><td>pageBook2</td><td>How do glaciers shape the Earth&#x27;s surface?</td><td class="resp"><p><mark><strong>Glaciers</strong>, vast accumulations of ice formed over centuries, serve as both <u>sculptors of the Earth 's surface</u> and archives of climatic history.</mark> As glaciers advance, they <mark>erode underlying rock through processes such as abrasion and plucking</mark>, carving distinctive <strong>U-shaped valleys</strong> and transporting sediment across considerable distances.</p>
-
-<p><mark>When they retreat, they leave behind depositional features, including <strong>moraines</strong> and <strong>outwash plains</strong>, which provide insight into past glacial activity.</mark></p>
-
-<p><mark>Beyond their geomorphological impact, glaciers preserve invaluable records of atmospheric conditions.</mark> Ice cores extracted from glaciers contain layers of compacted snow, each corresponding to a specific period.</p>
-
-<p>These layers trap air bubbles, particulate matter, and isotopic signatures that allow scientists to reconstruct historical temperature fluctuations, volcanic activity, and even anthropogenic pollution levels.</p>
-
-<p><mark>These records make glaciers key archives for understanding past environmental conditions.</mark></p>
-
-<p><mark><u>However, the accelerated melting of glaciers due to rising global temperatures threatens both their physical presence and the data they contain.</u></mark> As ice layers degrade, the integrity of these climatic records is compromised, limiting the extent to which scientists can accurately interpret past environmental conditions.</p>
-
-<p><mark>Consequently, glaciers are not only indicators of climate change but also irreplaceable repositories of Earth 's environmental history.</mark> ❄️🌍</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>They erode rock through abrasion and plucking and carve U-shaped valleys.</u></mark></p></td>
-        <td class="auto-score">5</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>18</td><td>pageBook2</td><td>What are abrasion and plucking in glacial erosion?</td><td class="resp"><p><mark><strong>Glaciers</strong>, vast accumulations of ice formed over centuries, serve as both sculptors of the Earth 's surface and archives of climatic history.</mark> As glaciers advance, <mark><strong>they erode underlying rock through processes such as abrasion and plucking</strong></mark>, carving distinctive U-shaped valleys and transporting sediment across considerable distances.</p>
-
-<p><mark><u>Abrasion and plucking are key processes by which glaciers erode the rock beneath them.</u></mark></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Processes where ice scrapes rock and pulls pieces away.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>19</td><td>pageBook2</td><td>What landforms are created by advancing glaciers?</td><td class="resp"><p><mark><strong>Glaciers</strong>, vast accumulations of ice formed over centuries, serve as both sculptors of the Earth 's surface and archives of climatic history.</mark> As glaciers advance, they erode underlying rock through processes such as abrasion and plucking, <mark><strong>carving distinctive U-shaped valleys</strong></mark> and transporting sediment across considerable distances.</p>
-
-<p><mark><strong>When they retreat, they leave behind depositional features, including moraines and outwash plains</strong></mark>, which provide insight into past glacial activity.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Distinctive U-shaped valleys and transported sediment.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>20</td><td>pageBook2</td><td>What features are left behind when glaciers retreat?</td><td class="resp"><p><mark>When glaciers retreat, they leave behind depositional features, including <strong>moraines</strong> and <strong>outwash plains</strong>, which provide insight into past glacial activity.</mark> These features are important for understanding the history of glaciers and their impact on the landscape. ❄️</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Moraines and outwash plains.</u></mark></p></td>
-        <td class="auto-score">5</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>21</td><td>pageBook2</td><td>What are moraines and outwash plains?</td><td class="resp"><mark>When glaciers retreat, they leave behind depositional features, including <strong>moraines</strong> and <strong>outwash plains</strong>, which provide insight into past glacial activity.</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Depositional features left by retreating glaciers.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>22</td><td>pageBook2</td><td>What do ice cores contain?</td><td class="resp"><p><mark><strong>Ice cores extracted from glaciers contain layers of compacted snow, each corresponding to a specific period.</strong></mark> <mark>These layers trap air bubbles, particulate matter, and isotopic signatures that allow scientists to reconstruct historical temperature fluctuations, volcanic activity, and even anthropogenic pollution levels.</mark></p>
-
-<p><mark><strong>These records make glaciers key archives for understanding past environmental conditions.</strong></mark></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Layers of compacted snow with trapped air bubbles, particles, and isotopic signatures.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>23</td><td>pageBook2</td><td>How do ice cores help reconstruct past climates?</td><td class="resp"><p><mark><strong>Ice cores extracted from glaciers contain layers of compacted snow, each corresponding to a specific period.</strong></mark> These layers trap air bubbles, particulate matter, and isotopic signatures that allow scientists to reconstruct historical temperature fluctuations, volcanic activity, and even anthropogenic pollution levels.</p>
-
-<p><mark><strong>These records make glaciers key archives for understanding past environmental conditions.</strong></mark> However, the accelerated melting of glaciers due to rising global temperatures threatens both their physical presence and the data they contain.</p>
-
-<p><u>As ice layers degrade, the integrity of these climatic records is compromised</u>, limiting the extent to which scientists can accurately interpret past environmental conditions.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>They preserve layered records of temperature and atmospheric conditions.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>24</td><td>pageBook2</td><td>What kinds of information can air bubbles in ice cores reveal?</td><td class="resp"><p><mark>Ice cores extracted from glaciers contain layers of compacted snow, each corresponding to a specific period.</mark> These layers trap <strong>air bubbles</strong>, particulate matter, and isotopic signatures that allow scientists to reconstruct <mark>historical temperature fluctuations, volcanic activity, and even anthropogenic pollution levels.</mark> 🧊🌍</p>
-
-<p><mark><strong>Air bubbles in ice cores</strong> reveal valuable information about past atmospheric conditions.</mark> They help scientists understand <u>how the climate has changed over time</u> by preserving samples of the air from different periods.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Past atmospheric composition and pollutants.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>25</td><td>pageBook2</td><td>How do isotopic signatures help scientists?</td><td class="resp"><p><mark><strong>Isotopic signatures</strong> trapped in ice cores from glaciers allow scientists to reconstruct historical temperature fluctuations, volcanic activity, and even anthropogenic pollution levels.</mark> 🧊🌍</p>
-
-<p><mark>These isotopic signatures help scientists understand past environmental conditions by providing detailed climatic history preserved in glacier layers.</mark></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>They help reconstruct historical temperature fluctuations.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>26</td><td>pageBook2</td><td>Why are glaciers considered archives of climatic history?</td><td class="resp"><p><mark><strong>Glaciers</strong> are considered archives of climatic history because they <u>preserve invaluable records of atmospheric conditions</u>.</mark></p>
-
-<p><mark>Ice cores extracted from glaciers contain layers of compacted snow, each corresponding to a specific period.</mark> These layers trap <strong>air bubbles, particulate matter, and isotopic signatures</strong> that allow scientists to reconstruct <mark>historical temperature fluctuations, volcanic activity, and even anthropogenic pollution levels.</mark></p>
-
-<p><mark>These records make glaciers key archives for understanding past environmental conditions.</mark> However, <u>accelerated melting of glaciers threatens both their physical presence and the data they contain</u>, which compromises the integrity of these climatic records.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Ice cores store layered records of past conditions.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>27</td><td>pageBook2</td><td>What threatens the integrity of ice-core records?</td><td class="resp"><p><mark><strong>However, the accelerated melting of glaciers due to rising global temperatures threatens both their physical presence and the data they contain.</strong></mark></p>
-
-<p><mark>As ice layers degrade, the integrity of these climatic records is compromised</mark>, limiting the extent to which scientists can accurately interpret past environmental conditions.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Accelerated melting from rising temperatures.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>28</td><td>pageBook2</td><td>How does glacier melting affect scientific interpretation of the past?</td><td class="resp"><p><mark><strong>Glacier melting</strong> affects scientific interpretation of the past by <u>compromising the integrity of climatic records</u> preserved in ice layers.</mark> 
-
-<br><br>
-
-Glaciers contain <strong>ice cores</strong> with layers trapping air bubbles and isotopic signatures that help scientists reconstruct historical climate data. 
-
-<br><br>
-
-However, as glaciers melt faster due to <strong>rising global temperatures</strong>, these valuable records degrade, <mark>limiting scientists' ability to accurately interpret past environmental conditions.</mark></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Degrades ice layers and compromises records.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>29</td><td>pageBook2</td><td>Why are glaciers called indicators of climate change?</td><td class="resp"><p><mark><strong>Glaciers</strong> are called indicators of climate change because they <strong>preserve invaluable records of atmospheric conditions</strong> through ice cores that contain layers of compacted snow, trapping air bubbles, particulate matter, and isotopic signatures.</mark></p>
-
-<p><mark>These records allow scientists to reconstruct historical temperature fluctuations, volcanic activity, and pollution levels, making glaciers key archives for understanding past environmental conditions.</mark></p>
-
-<p><mark style="background-color:#E2ABE24D;">However, the accelerated melting of glaciers due to rising global temperatures threatens both their physical presence and the data they contain, compromising the integrity of these climatic records.</mark></p>
-
-<p><strong>Consequently, glaciers are not only indicators of climate change but also irreplaceable repositories of Earth's environmental history.</strong> ❄️🌍</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Their accelerated melting reflects rising global temperatures.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>30</td><td>pageBook2</td><td>Why are glaciers considered irreplaceable repositories?</td><td class="resp"><p><mark><strong>Glaciers</strong> are considered <u>irreplaceable repositories</u> because they <strong>preserve invaluable records of atmospheric conditions</strong>.</mark></p>
-
-<p><mark>Ice cores extracted from glaciers contain layers of compacted snow, each corresponding to a specific period.</mark> These layers trap air bubbles, particulate matter, and isotopic signatures that allow scientists to reconstruct historical temperature fluctuations, volcanic activity, and even anthropogenic pollution levels.</p>
-
-<p><mark>These records make glaciers key archives for understanding past environmental conditions.</mark> However, the accelerated melting of glaciers due to rising global temperatures threatens both their physical presence and the data they contain.</p>
-
-<p><mark>As ice layers degrade, the integrity of these climatic records is compromised, limiting the extent to which scientists can accurately interpret past environmental conditions.</mark> Consequently, glaciers are not only indicators of climate change but also <strong>irreplaceable repositories of Earth's environmental history.</strong> ❄️📚</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>They store unique climatic records that are lost when melting.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>31</td><td>pageBook3</td><td>What was the impact of the printing press on book production?</td><td class="resp"><p><mark>The invention of the <strong>printing press</strong> in the <strong>fifteenth century</strong> marked a profound <u>transformation</u> in the dissemination of knowledge.</mark> Prior to its development, texts were laboriously copied by hand, a process that was both time-consuming and prone to error.</p>
-
-<p><mark>As a result, books were scarce, expensive, and accessible primarily to a limited segment of the population.</mark> The introduction of movable type printing fundamentally altered this dynamic.</p>
-
-<p><mark>By enabling the rapid reproduction of texts, the printing press significantly reduced the cost of books and facilitated their widespread distribution.</mark> This democratization of knowledge contributed to rising literacy rates and allowed ideas to circulate more freely across geographical and social boundaries.</p>
-
-<p><mark>Moreover, the printing press played a pivotal role in intellectual movements such as the <strong>Renaissance</strong> and the <strong>Reformation</strong>.</mark> Scholars and reformers could disseminate their ideas to a broader audience, challenging established authorities and fostering critical debate.</p>
-
-<p><u>However, this increased flow of information also raised concerns about the spread of misinformation and the erosion of traditional structures of authority.</u> In essence, the printing press not only revolutionized the production of written material but also reshaped the intellectual landscape, laying the groundwork for modern systems of communication and education.</p>
-
-<p><mark>This technological shift transformed how knowledge was produced and shared.</mark> 📚✨</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>It enabled rapid reproduction, lowering costs and increasing distribution.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>32</td><td>pageBook3</td><td>Why were books scarce before the printing press?</td><td class="resp"><p><mark><strong>Prior to the invention of the printing press in the fifteenth century</strong>, <u>texts were laboriously copied by hand</u>, a process that was both time-consuming and prone to error.</mark> </p>
-
-<p><mark>As a result, books were scarce, expensive, and accessible primarily to a limited segment of the population.</mark></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Texts were hand-copied, slow, error-prone, and expensive.</u></mark></p></td>
-        <td class="auto-score">5</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>33</td><td>pageBook3</td><td>What is movable type printing?</td><td class="resp"><p><mark><strong>Movable type printing</strong> is a technology introduced by the <strong>printing press</strong> in the <strong>fifteenth century</strong> that allowed the rapid reproduction of texts.</mark> </p>
-
-<p><mark>This innovation fundamentally changed how books were made by making them less expensive and easier to distribute widely.</mark> </p>
-
-<p><strong>Before movable type printing, texts were copied by hand</strong>, which was slow and error-prone, making books scarce and costly.</p>
-
-<p><mark>Movable type printing helped spread knowledge more broadly, increased literacy, and supported important intellectual movements like the Renaissance and the Reformation.</mark> </p>
-
-<p><u>It also raised concerns about misinformation and the challenge to traditional authority.</u></p>
-
-<p><mark>Overall, movable type printing revolutionized written communication and education, shaping the modern world.</mark> 📚✨</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>A method using reusable type pieces to print texts quickly.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>34</td><td>pageBook3</td><td>How did the printing press reduce the cost of books?</td><td class="resp"><p><mark>The printing press reduced the cost of books by enabling the rapid reproduction of texts</mark>, which was much faster than the previous method of copying by hand.</p>
-
-<p><strong>Before the printing press, books were scarce, expensive, and accessible only to a limited segment of the population</strong> because copying was time-consuming and prone to error.</p>
-
-<p><mark>By making it possible to produce many copies quickly, the printing press <strong>significantly lowered the cost of books</strong> and allowed them to be distributed widely</mark>.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Mass production lowered production time and expense.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>35</td><td>pageBook3</td><td>How did the printing press affect literacy rates?</td><td class="resp"><p><mark>The invention of the printing press in the <strong>fifteenth century</strong> marked a profound <u>transformation</u> in the dissemination of knowledge.</mark> Prior to its development, texts were laboriously copied by hand, a process that was both time-consuming and prone to error.</p>
-
-<p><mark>By enabling the rapid reproduction of texts, the printing press significantly reduced the cost of books and facilitated their widespread distribution.</mark> This democratization of knowledge contributed to <strong>rising literacy rates</strong> and allowed ideas to circulate more freely across geographical and social boundaries.</p>
-
-<p><mark>The printing press played a pivotal role in intellectual movements such as the <strong>Renaissance</strong> and the <strong>Reformation</strong>.</mark> Scholars and reformers could disseminate their ideas to a broader audience, challenging established authorities and fostering critical debate.</p>
-
-<p><mark>In essence, the printing press not only revolutionized the production of written material but also reshaped the intellectual landscape, laying the groundwork for modern systems of communication and education.</mark> This technological shift transformed how knowledge was produced and shared.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>It helped increase literacy by making books more accessible.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>36</td><td>pageBook3</td><td>How did it change the circulation of ideas?</td><td class="resp"><p><mark><strong>The invention of the printing press in the fifteenth century marked a profound transformation in the dissemination of knowledge.</strong></mark> Prior to its development, texts were laboriously copied by hand, a process that was both time-consuming and prone to error.</p>
-
-<p>As a result, books were scarce, expensive, and accessible primarily to a limited segment of the population.</p>
-
-<p><mark><strong>The introduction of movable type printing fundamentally altered this dynamic.</strong></mark> By enabling the rapid reproduction of texts, the printing press significantly reduced the cost of books and facilitated their widespread distribution.</p>
-
-<p><mark>This democratization of knowledge contributed to rising literacy rates and allowed ideas to circulate more freely across geographical and social boundaries.</mark></p>
-
-<p>Moreover, the printing press played a pivotal role in intellectual movements such as the <strong>Renaissance</strong> and the <strong>Reformation</strong>.</p>
-
-<p><mark>Scholars and reformers could disseminate their ideas to a broader audience, challenging established authorities and fostering critical debate.</mark></p>
-
-<p><u>However, this increased flow of information also raised concerns about the spread of misinformation and the erosion of traditional structures of authority.</u></p>
-
-<p><mark><strong>In essence, the printing press not only revolutionized the production of written material but also reshaped the intellectual landscape, laying the groundwork for modern systems of communication and education.</strong></mark> This technological shift transformed how knowledge was produced and shared. 📚✨</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Ideas spread more freely across social and geographic boundaries.</u></mark></p></td>
-        <td class="auto-score">5</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>37</td><td>pageBook3</td><td>What role did the printing press play in the Renaissance?</td><td class="resp"><p><mark><strong>The invention of the printing press in the fifteenth century marked a profound تحول (transformation) in the dissemination of knowledge.</strong></mark> Prior to its development, texts were laboriously copied by hand, a process that was both time-consuming and prone to error.</p>
-
-<p><mark>As a result, books were scarce, expensive, and accessible primarily to a limited segment of the population.</mark> The introduction of movable type printing fundamentally altered this dynamic.</p>
-
-<p><mark>By enabling the rapid reproduction of texts, the printing press significantly reduced the cost of books and facilitated their widespread distribution.</mark> This democratization of knowledge contributed to rising literacy rates and allowed ideas to circulate more freely across geographical and social boundaries.</p>
-
-<p><mark>Moreover, the printing press played a pivotal role in intellectual movements such as the Renaissance and the Reformation.</mark> Scholars and reformers could disseminate their ideas to a broader audience, challenging established authorities and fostering critical debate.</p>
-
-<p><u>However, this increased flow of information also raised concerns about the spread of misinformation and the erosion of traditional structures of authority.</u> In essence, the printing press not only revolutionized the production of written material but also reshaped the intellectual landscape, laying the groundwork for modern systems of communication and education.</p>
-
-<p><mark><strong>This technological shift transformed how knowledge was produced and shared.</strong></mark></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>It helped scholars distribute ideas widely.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>38</td><td>pageBook3</td><td>What role did it play in the Reformation?</td><td class="resp"><p><mark><strong>The printing press played a pivotal role in intellectual movements such as the Renaissance and the Reformation.</strong></mark> <mark>Scholars and reformers could disseminate their ideas to a broader audience, challenging established authorities and fostering critical debate.</mark></p>
-
-<p><mark>This democratization of knowledge contributed to rising literacy rates and allowed ideas to circulate more freely across geographical and social boundaries.</mark></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>It enabled reformers to reach broader audiences.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>39</td><td>pageBook3</td><td>Why did the printing press challenge established authorities?</td><td class="resp"><p><mark><strong>The printing press challenged established authorities by enabling scholars and reformers to disseminate their ideas to a broader audience, fostering critical debate.</strong></mark> This increased flow of information allowed ideas to circulate more freely across geographical and social boundaries, which <mark>raised concerns about the spread of misinformation and the erosion of traditional structures of authority.</mark></p>
-
-<p><mark><u>By democratizing knowledge and reducing the cost of books, the printing press undermined the control that established authorities had over information.</u></mark> This shift played a pivotal role in intellectual movements like the Renaissance and the Reformation, <strong>which questioned and challenged existing power structures.</strong></p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Wider dissemination enabled critical debate of authorities.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>40</td><td>pageBook3</td><td>What concerns arose about misinformation?</td><td class="resp"><p><mark><strong>The increased flow of information also raised concerns about the spread of misinformation and the erosion of traditional structures of authority.</strong></mark> 📚</p>
-
-<p><mark>This highlights that while the printing press democratized knowledge, it also brought challenges related to the accuracy and control of information.</mark> ⚠️</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Increased information flow raised concerns about misinformation.</u></mark></p></td>
-        <td class="auto-score">5</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>41</td><td>pageBook3</td><td>How did the printing press reshape communication and education?</td><td class="resp"><p><mark><strong>The invention of the printing press in the fifteenth century marked a profound transformation in the dissemination of knowledge.</strong></mark> Prior to its development, texts were laboriously copied by hand, a process that was both time-consuming and prone to error. As a result, books were scarce, expensive, and accessible primarily to a limited segment of the population.</p>
-
-<p><mark><strong>The introduction of movable type printing fundamentally altered this dynamic.</strong></mark> By enabling the rapid reproduction of texts, the printing press significantly reduced the cost of books and facilitated their widespread distribution. <mark>This democratization of knowledge contributed to rising literacy rates and allowed ideas to circulate more freely across geographical and social boundaries.</mark></p>
-
-<p><mark><strong>The printing press played a pivotal role in intellectual movements such as the Renaissance and the Reformation.</strong></mark> Scholars and reformers could disseminate their ideas to a broader audience, challenging established authorities and fostering critical debate. <u>However, this increased flow of information also raised concerns about the spread of misinformation and the erosion of traditional structures of authority.</u></p>
-
-<p><mark><strong>In essence, the printing press not only revolutionized the production of written material but also reshaped the intellectual landscape, laying the groundwork for modern systems of communication and education.</strong></mark> This technological shift transformed how knowledge was produced and shared. 📚✨</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>It transformed knowledge production and sharing, enabling modern systems.</u></mark></p></td>
-        <td class="auto-score">4</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>42</td><td>pageBook3</td><td>List 3 effects of movable type printing.</td><td class="resp"><p><mark>The invention of the printing press in the fifteenth century marked a profound transformation in the dissemination of knowledge.</mark></p>
-
-<p><strong>Three effects of movable type printing</strong> are:</p>
-
-<ul>
-  <li><mark>It significantly reduced the cost of books and facilitated their widespread distribution.</mark></li>
-  
-  <li><mark>This democratization of knowledge contributed to rising literacy rates and allowed ideas to circulate more freely across geographical and social boundaries.</mark></li>
-  
-  <li><mark>The printing press played a pivotal role in intellectual movements such as the Renaissance and the Reformation by enabling scholars and reformers to disseminate their ideas to a broader audience.</mark></li>
-</ul></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Lower book costs, wider distribution, and greater circulation of ideas.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>43</td><td>pageBook3</td><td>Explain why handwritten copying was prone to error.</td><td class="resp"><p><mark><strong>Prior to the invention of the printing press in the fifteenth century</strong>, <u>texts were laboriously copied by hand, a process that was both time-consuming and prone to error</u>.</mark> </p>
-
-<p><mark>This made books scarce, expensive, and accessible mainly to a limited segment of the population.</mark> ✍️</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Manual copying was slow and error-prone.</u></mark></p></td>
-        <td class="auto-score">3</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>44</td><td>pageBook3</td><td>What does democratization of knowledge mean in this context?</td><td class="resp"><p><mark><strong>The democratization of knowledge</strong> means making knowledge more accessible to a wider range of people.</mark> Before the printing press, books were rare and expensive, so only a few could access them.</p>
-
-<p><mark>The printing press allowed books to be produced quickly and cheaply,</mark> which helped spread ideas across different places and social groups.</p>
-
-<p><mark>This change helped increase literacy and let more people learn and share ideas freely,</mark> breaking old limits on who could get knowledge.</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Knowledge became accessible to broader populations.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>45</td><td>pageBook3</td><td>How did the printing press affect access to knowledge?</td><td class="resp"><p><mark>The invention of the <strong>printing press</strong> in the <strong>fifteenth century</strong> marked a profound <u>transformation</u> in the dissemination of knowledge.</mark> Prior to its development, texts were laboriously copied by hand, a process that was both time-consuming and prone to error.</p>
-
-<p>As a result, books were scarce, expensive, and accessible primarily to a limited segment of the population.</p>
-
-<p><mark>The introduction of movable type printing fundamentally altered this dynamic.</mark> By enabling the rapid reproduction of texts, the printing press significantly reduced the cost of books and facilitated their widespread distribution.</p>
-
-<p><mark>This democratization of knowledge contributed to rising literacy rates and allowed ideas to circulate more freely across geographical and social boundaries.</mark></p>
-
-<p>Moreover, the printing press played a pivotal role in intellectual movements such as the <strong>Renaissance</strong> and the <strong>Reformation</strong>.</p>
-
-<p>Scholars and reformers could disseminate their ideas to a broader audience, challenging established authorities and fostering critical debate.</p>
-
-<p><u>However, this increased flow of information also raised concerns about the spread of misinformation and the erosion of traditional structures of authority.</u></p>
-
-<p><mark>In essence, the printing press not only revolutionized the production of written material but also reshaped the intellectual landscape, laying the groundwork for modern systems of communication and education.</mark> This technological shift transformed how knowledge was produced and shared. 📚✨</p></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>Books became cheaper and more widely available.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>46</td><td>pageBook1</td><td>What do ice cores tell us?</td><td class="resp"><mark style="background-color:#E2ABE24D;">I don't know. It's not from the selected text. Ask me something from the text and I will reply! :)</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 2. Please change to Page 2; I cannot reply to it from Page 1.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>47</td><td>pageBook1</td><td>What was the impact of the printing press on literacy?</td><td class="resp"><mark style="background-color:#E2ABE24D;">I don't know. It's not from the selected text. Ask me something from the text and I will reply! :)</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 3. Please change to Page 3; I cannot reply to it from Page 1.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>48</td><td>pageBook2</td><td>What is coral bleaching?</td><td class="resp"><mark><strong>Coral bleaching</strong> is not mentioned or explained in the provided text about glaciers.</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 2.</u></mark></p></td>
-        <td class="auto-score">1</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>49</td><td>pageBook2</td><td>How do corals adapt to heat stress?</td><td class="resp"><mark>I don't know. It's not from the selected text. Ask me something from the text and I will reply! :)</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 2.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>50</td><td>pageBook3</td><td>What is ocean acidification?</td><td class="resp"><mark> I don't know. It's not from the selected text. Ask me something from the text and I will reply! :) </mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 3.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>51</td><td>pageBook3</td><td>What landforms do glaciers create?</td><td class="resp"><mark>I don't know. It's not from the selected text. Ask me something from the text and I will reply! :)</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 2. Please change to Page 2; I cannot reply to it from Page 3.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>52</td><td>pageBook1</td><td>What role did the printing press play in the Reformation?</td><td class="resp"><mark style="background-color:#E2ABE24D;">I don't know. It's not from the selected text. Ask me something from the text and I will reply! :)</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 3. Please change to Page 3; I cannot reply to it from Page 1.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>53</td><td>pageBook2</td><td>What is the symbiotic relationship between corals and zooxanthellae?</td><td class="resp"><mark>I don't know. It's not from the selected text. Ask me something from the text and I will reply! :)</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 2.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>54</td><td>pageBook3</td><td>What happens during coral bleaching?</td><td class="resp"><mark>I don't know. It's not from the selected text. Ask me something from the text and I will reply! :)</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 1. Please change to Page 1; I cannot reply to it from Page 3.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-<tr><td>55</td><td>pageBook3</td><td>How do glaciers erode rock?</td><td class="resp"><mark><u>I don't know. It's not from the selected text.</u> Ask me something from the text and I will reply! :)</mark></td><td class="expected"><p><mark style=\"background-color:#E2ABE24D;\"><strong>Expected:</strong> <u>This question is about text on Page 2. Please change to Page 2; I cannot reply to it from Page 3.</u></mark></p></td>
-        <td class="auto-score">2</td><td><input type="number" min="1" max="5" class="score-input" /></td></tr>
-</tbody>
+    <tbody id="historyBody"></tbody>
   </table>
+
   <script>
-    const btn = document.getElementById('calcScore');
-    const result = document.getElementById('scoreResult');
-    btn.addEventListener('click', () => {
-      const inputs = Array.from(document.querySelectorAll('.score-input'));
-      const values = inputs
-        .map((i) => parseFloat(i.value))
-        .filter((v) => !Number.isNaN(v));
-      if (!values.length) {
-        result.textContent = 'No scores entered yet.';
+    const runBtn = document.getElementById('runEval');
+    const sweepBtn = document.getElementById('runSweep');
+    const runModel = document.getElementById('runModel');
+    const runTemp = document.getElementById('runTemp');
+    const runPrompt = document.getElementById('runPrompt');
+    const sweepTemps = document.getElementById('sweepTemps');
+    const sweepPrompts = document.getElementById('sweepPrompts');
+    const runStatus = document.getElementById('runStatus');
+    const progressWrap = document.getElementById('progressWrap');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const progressCounts = document.getElementById('progressCounts');
+    const progressElapsed = document.getElementById('progressElapsed');
+    const progressQuestion = document.getElementById('progressQuestion');
+    const runLogs = document.getElementById('runLogs');
+    const historyBody = document.getElementById('historyBody');
+    let pollTimer = null;
+
+    function parseCsvList(raw) {
+      return String(raw || '')
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean);
+    }
+
+    function getSingleConfig() {
+      return {
+        model: (runModel.value || '').trim() || null,
+        temperature: Number(runTemp.value),
+        prompt_preset: (runPrompt.value || 'baseline').trim() || 'baseline',
+      };
+    }
+
+    function getSweepConfigs() {
+      const temps = parseCsvList(sweepTemps.value)
+        .map((x) => Number(x))
+        .filter((x) => Number.isFinite(x));
+      const prompts = parseCsvList(sweepPrompts.value)
+        .map((x) => x.toLowerCase())
+        .filter((x) => ['baseline', 'strict', 'teaching'].includes(x));
+      const model = (runModel.value || '').trim() || null;
+      const configs = [];
+      temps.forEach((t) => {
+        prompts.forEach((p) => {
+          configs.push({ model, temperature: t, prompt_preset: p });
+        });
+      });
+      return configs;
+    }
+
+    function renderStatus(status) {
+      const percent = Number(status.percent || 0);
+      const total = Number(status.total || 0);
+      const current = Number(status.current || 0);
+      const runIndex = Number(status.run_index || 0);
+      const runTotal = Number(status.run_total || 0);
+      progressFill.style.width = `${Math.max(0, Math.min(percent, 100))}%`;
+      progressText.textContent = `${Math.round(percent)}%`;
+      progressCounts.textContent = total ? `${current}/${total}` : '0/0';
+      progressElapsed.textContent = `${Number(status.elapsed_seconds || 0).toFixed(1)}s`;
+      const page = status.current_page || '';
+      const question = status.current_question || '';
+      const runMeta = runTotal > 0 ? `Run ${runIndex}/${runTotal}` : '';
+      const qMeta = question ? `${page}: ${question}` : '';
+      progressQuestion.textContent = [runMeta, qMeta].filter(Boolean).join(' | ');
+    }
+
+    async function pollStatusOnce() {
+      const res = await fetch('/api/manual-eval/status', { cache: 'no-store' });
+      const data = await res.json();
+      const status = data.status || {};
+      renderStatus(status);
+      if (Array.isArray(status.log_tail) && status.log_tail.length) {
+        runLogs.textContent = status.log_tail.join('\n');
+        runLogs.style.display = 'block';
+      }
+      if (status.running) {
+        runStatus.textContent = 'Running evaluation... this can take a while.';
+        return false;
+      }
+      if (status.ok === true) {
+        runStatus.textContent = `Run completed in ${status.duration_seconds || status.elapsed_seconds || 0}s. Reloading report...`;
+        clearInterval(pollTimer);
+        pollTimer = null;
+        setTimeout(() => window.location.reload(), 700);
+        return true;
+      }
+      if (status.ok === false) {
+        runStatus.textContent = `Run failed: ${status.error || 'Unknown error'}`;
+        clearInterval(pollTimer);
+        pollTimer = null;
+        runBtn.disabled = false;
+        sweepBtn.disabled = false;
+        loadHistory();
+        return true;
+      }
+      return false;
+    }
+
+    function startPollingStatus() {
+      if (pollTimer) return;
+      pollTimer = setInterval(() => {
+        pollStatusOnce().catch((err) => {
+          runStatus.textContent = `Status error: ${err.message || err}`;
+        });
+      }, 1000);
+      pollStatusOnce().catch((err) => {
+        runStatus.textContent = `Status error: ${err.message || err}`;
+      });
+    }
+
+    async function runEvaluation() {
+      runBtn.disabled = true;
+      sweepBtn.disabled = true;
+      runStatus.textContent = 'Starting evaluation...';
+      progressWrap.style.display = 'block';
+      progressFill.style.width = '0%';
+      progressText.textContent = '0%';
+      progressCounts.textContent = '0/0';
+      progressElapsed.textContent = '0.0s';
+      progressQuestion.textContent = '';
+      runLogs.style.display = 'none';
+      runLogs.textContent = '';
+      try {
+        const res = await fetch('/api/manual-eval/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(getSingleConfig()),
+        });
+        const data = await res.json();
+        if (!res.ok && res.status !== 409) {
+          const err = data.error || data.stderr || 'Unknown error';
+          runStatus.textContent = `Run failed: ${err}`;
+          runLogs.textContent = [data.stdout || '', data.stderr || ''].filter(Boolean).join('\n\n');
+          runLogs.style.display = runLogs.textContent ? 'block' : 'none';
+          progressWrap.style.display = 'none';
+          runBtn.disabled = false;
+          sweepBtn.disabled = false;
+          return;
+        }
+        runStatus.textContent = res.status === 409
+          ? 'Evaluation already running. Tracking progress...'
+          : 'Evaluation started. Tracking progress...';
+        startPollingStatus();
+      } catch (err) {
+        runStatus.textContent = `Run failed: ${err.message || err}`;
+        progressWrap.style.display = 'none';
+        runBtn.disabled = false;
+        sweepBtn.disabled = false;
+      }
+    }
+
+    async function runSweep() {
+      const configs = getSweepConfigs();
+      if (!configs.length) {
+        runStatus.textContent = 'Sweep config is empty. Add temps and prompts.';
         return;
       }
-      const avg = values.reduce((a, b) => a + b, 0) / values.length;
-      result.textContent = `Average score: ${avg.toFixed(2)} (based on ${values.length} responses)`;
-    });
+      runBtn.disabled = true;
+      sweepBtn.disabled = true;
+      runStatus.textContent = `Starting sweep with ${configs.length} runs...`;
+      progressWrap.style.display = 'block';
+      progressFill.style.width = '0%';
+      progressText.textContent = '0%';
+      progressCounts.textContent = '0/0';
+      progressElapsed.textContent = '0.0s';
+      progressQuestion.textContent = '';
+      runLogs.style.display = 'none';
+      runLogs.textContent = '';
+      try {
+        const res = await fetch('/api/manual-eval/sweep', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ configs }),
+        });
+        const data = await res.json();
+        if (!res.ok && res.status !== 409) {
+          runStatus.textContent = `Sweep failed: ${data.error || 'Unknown error'}`;
+          progressWrap.style.display = 'none';
+          runBtn.disabled = false;
+          sweepBtn.disabled = false;
+          return;
+        }
+        runStatus.textContent = res.status === 409
+          ? 'Evaluation already running. Tracking progress...'
+          : 'Sweep started. Tracking progress...';
+        startPollingStatus();
+      } catch (err) {
+        runStatus.textContent = `Sweep failed: ${err.message || err}`;
+        progressWrap.style.display = 'none';
+        runBtn.disabled = false;
+        sweepBtn.disabled = false;
+      }
+    }
+
+    function renderHistory(rows) {
+      if (!historyBody) return;
+      historyBody.innerHTML = '';
+      (rows || []).slice().reverse().forEach((entry) => {
+        const cfg = entry.config || {};
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${entry.timestamp || ''}</td>
+          <td>${entry.mode || 'single'}</td>
+          <td>${cfg.model || ''}</td>
+          <td>${cfg.temperature ?? ''}</td>
+          <td>${cfg.prompt_preset || ''}</td>
+          <td>${entry.auto_avg ?? ''}</td>
+          <td>${entry.duration_seconds ?? ''}</td>
+          <td>${entry.ok ? 'ok' : 'fail'}</td>
+        `;
+        historyBody.appendChild(tr);
+      });
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/manual-eval/history', { cache: 'no-store' });
+        const data = await res.json();
+        if (data && data.ok) renderHistory(data.history || []);
+      } catch (_) {
+        // ignore history failures in UI
+      }
+    }
+
+    runBtn.addEventListener('click', runEvaluation);
+    sweepBtn.addEventListener('click', runSweep);
+
+    loadHistory();
   </script>
 </body>
 </html>

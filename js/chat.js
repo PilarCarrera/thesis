@@ -2,6 +2,7 @@ import { OPENAI_HEALTH_URL, DEFAULT_HL_COLOR } from './config.js';
 import { sanitizeResponseHtml, stripHtml, truncate } from './utils.js';
 import { callOpenAI } from './openai.js';
 import { getPageText, getAllPageTexts } from './rag.js';
+import { highlightCitationText, clearCitationHighlight } from './leftPanel.js';
 
 const rightPanel = document.querySelector('.panel.right');
 const chatThread = document.getElementById('chatThread');
@@ -152,15 +153,98 @@ export function applyChatStyle(settings) {
   chatThread.dataset.highlights = settings.highlightsOn ? 'on' : 'off';
 }
 
+let citationPopup = null;
+
+function getCitationPopup() {
+  if (citationPopup) return citationPopup;
+  citationPopup = document.createElement('div');
+  citationPopup.className = 'citation-popup';
+  citationPopup.hidden = true;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'citation-popup-close';
+  closeBtn.type = 'button';
+  closeBtn.textContent = '×';
+  closeBtn.addEventListener('click', hideCitationPopup);
+
+  const label = document.createElement('div');
+  label.className = 'citation-popup-label';
+
+  const body = document.createElement('div');
+  body.className = 'citation-popup-body';
+
+  citationPopup.appendChild(closeBtn);
+  citationPopup.appendChild(label);
+  citationPopup.appendChild(body);
+  document.body.appendChild(citationPopup);
+
+  document.addEventListener('pointerdown', (e) => {
+    if (!citationPopup.hidden && !citationPopup.contains(e.target) && !e.target.closest('.chat-ref')) {
+      hideCitationPopup();
+    }
+  }, true);
+
+  return citationPopup;
+}
+
+function showCitationPopup(refEl, citations, source) {
+  const popup = getCitationPopup();
+  popup.querySelector('.citation-popup-label').textContent = `📖 From: ${source}`;
+
+  const body = popup.querySelector('.citation-popup-body');
+  body.innerHTML = '';
+  citations.forEach((c) => {
+    const block = document.createElement('div');
+    block.className = 'citation-popup-text';
+    block.textContent = `"${c}"`;
+    body.appendChild(block);
+  });
+
+  popup.hidden = false;
+
+  const rect = refEl.getBoundingClientRect();
+  const popupW = 380;
+  let left = rect.left + rect.width / 2 - popupW / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - popupW - 8));
+  popup.style.left = `${left}px`;
+  popup.style.top = `${rect.top - 8}px`;
+  popup.style.transform = 'translateY(-100%)';
+
+  highlightCitationText(citations);
+}
+
+function hideCitationPopup() {
+  if (citationPopup) citationPopup.hidden = true;
+  clearCitationHighlight();
+}
+
 function appendMessage(role, content, options = {}) {
   if (!chatThread) return;
   const msg = document.createElement('div');
   msg.className = `chat-message ${role}`;
+  if (options.className) {
+    options.className
+      .split(/\s+/)
+      .filter(Boolean)
+      .forEach((cls) => msg.classList.add(cls));
+  }
   const allowHtml = options.allowHtml || false;
   if (allowHtml) {
     msg.innerHTML = sanitizeResponseHtml(content);
   } else {
     msg.textContent = stripHtml(content);
+  }
+  if (role === 'assistant' && options.citations && options.citations.length) {
+    const ref = document.createElement('button');
+    ref.className = 'chat-ref';
+    ref.type = 'button';
+    ref.title = 'View source passage';
+    ref.textContent = '1';
+    ref.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showCitationPopup(ref, options.citations, options.source || 'the text');
+    });
+    msg.appendChild(ref);
   }
   chatThread.appendChild(msg);
   if (chatThread.children.length <= 2) {
@@ -170,6 +254,25 @@ function appendMessage(role, content, options = {}) {
   }
   setChatEmptyVisible(false);
   chatThread.scrollTop = chatThread.scrollHeight;
+  return msg;
+}
+
+export function appendAssistantMessage(content, options = {}) {
+  return appendMessage('assistant', content, options);
+}
+
+function appendLoadingMessage() {
+  if (!chatThread) return null;
+  const msg = document.createElement('div');
+  msg.className = 'chat-message assistant loading';
+  msg.setAttribute('role', 'status');
+  msg.setAttribute('aria-label', 'Waiting for response');
+  msg.innerHTML = '<span class="chat-loading-spinner" aria-hidden="true"></span>';
+  chatThread.appendChild(msg);
+  chatThread.classList.remove('chat-thread--single');
+  setChatEmptyVisible(false);
+  chatThread.scrollTop = chatThread.scrollHeight;
+  return msg;
 }
 
 export function openChatView() {
@@ -197,6 +300,10 @@ export function showChatContext(action, selectedText) {
   openChatView();
   contextState.pendingContextText = selectedText;
   contextState.pendingContextAction = action;
+  if (action === 'summary') {
+    if (chatInput) chatInput.value = '';
+    handleChatSend();
+  }
 }
 
 function initializeSettings() {
@@ -209,20 +316,33 @@ function initializeSettings() {
   applyChatStyle(getChatSettings());
 }
 
+function clearTransientInfoMessages() {
+  if (!chatThread) return;
+  chatThread.querySelectorAll('.chat-message.chat-info-note').forEach((el) => el.remove());
+}
+
 async function handleChatSend() {
   if (!chatInput) return;
   const raw = chatInput.value.trim();
-  const fallbackFromContext = contextState.pendingContextText && contextState.pendingContextAction;
+  const requestContextState = {
+    pendingContextText: contextState.pendingContextText,
+    pendingContextAction: contextState.pendingContextAction,
+  };
+  const fallbackFromContext =
+    requestContextState.pendingContextText && requestContextState.pendingContextAction;
   if (!raw && !fallbackFromContext) return;
 
   const userText =
     raw ||
-    (contextState.pendingContextAction === 'summary'
+    (requestContextState.pendingContextAction === 'summary'
       ? 'Summarize the selected text.'
       : 'Explain the selected text.');
   openChatView();
+  clearTransientInfoMessages();
   appendMessage('user', userText);
   chatInput.value = '';
+  if (requestContextState.pendingContextText) clearChatContext();
+  let loadingMsg = null;
 
   const settings = getChatSettings();
   const currentPageKey = getCurrentPageKey();
@@ -236,7 +356,7 @@ async function handleChatSend() {
     );
     return;
   }
-  if (!contextState.pendingContextText && isSubjectiveOrUnclear(userText)) {
+  if (!requestContextState.pendingContextText && isSubjectiveOrUnclear(userText)) {
     appendMessage(
       'assistant',
       '<p><mark style="background-color:#E2ABE24D;">I don&#39;t think I understood your question.</mark> <u>Please rephrase it</u> or ask something directly from the text, and I will help. :)</p>',
@@ -244,7 +364,7 @@ async function handleChatSend() {
     );
     return;
   }
-  if (!contextState.pendingContextText && !isGeneralRequest(userText)) {
+  if (!requestContextState.pendingContextText && !isGeneralRequest(userText)) {
     const keywords = extractKeywords(userText);
     if (keywords.length) {
       const [currentText, allTexts] = await Promise.all([
@@ -283,14 +403,30 @@ async function handleChatSend() {
     }
   }
   try {
-    const response = await callOpenAI(userText, settings, contextState, currentPageKey, currentPageLabel);
-    appendMessage('assistant', response, { allowHtml: settings.highlightsOn });
+    loadingMsg = appendLoadingMessage();
+    const { text: response, source, citations } = await callOpenAI(
+      userText,
+      settings,
+      requestContextState,
+      currentPageKey,
+      currentPageLabel
+    );
+    if (loadingMsg) {
+      loadingMsg.remove();
+      loadingMsg = null;
+    }
+    appendMessage('assistant', response, { allowHtml: settings.highlightsOn, source, citations });
   } catch (err) {
+    if (loadingMsg) {
+      loadingMsg.remove();
+      loadingMsg = null;
+    }
     const detail = err && err.message ? ` (${err.message})` : '';
     appendMessage('assistant', `Sorry, I could not reach the chat service. Please try again.${detail}`);
     console.error(err);
   } finally {
-    // keep context until user clears it
+    if (loadingMsg) loadingMsg.remove();
+    // context is consumed on send
   }
 }
 

@@ -16,11 +16,13 @@ export async function loadLarfPrompt() {
 }
 
 export function buildSystemPrompt(settings, larfPrompt, pageLabel = 'the current page') {
-  const paragraphsRule = {
-    '1-2 lines': 'Keep paragraphs very short (about 1-2 lines, 1-2 sentences max).',
-    '2-4 lines': 'Keep paragraphs short (about 2-4 lines, 2-3 sentences max).',
-    '5-6 lines': 'Keep paragraphs moderate (about 5-6 lines, 3-5 sentences max).',
-  }[settings.paragraphs] || 'Keep paragraphs short.';
+  const paragraphLimits = {
+    '1-2 lines': 2,
+    '2-4 lines': 4,
+    '5-6 lines': 6,
+  };
+  const maxLines = paragraphLimits[settings.paragraphs] || 4;
+  const paragraphsRule = `Target length: about ${maxLines} lines maximum when possible. If the user asks for more detail, prioritize a complete answer and do not cut it off.`;
 
   const wordingRule =
     settings.format === 'Professional wording'
@@ -46,9 +48,11 @@ export function buildSystemPrompt(settings, larfPrompt, pageLabel = 'the current
     'Never add background knowledge or inferred details beyond the provided context.',
     'If the user asks for N items, return exactly N items.',
     'When the user asks for characteristics, features, traits, effects, reasons, steps, or points, always respond as a list.',
+    'Keep answers short and if it can be replied in one line, better, do not give extra information if not necessary.',
     'Keep answers under 90 words unless the user explicitly asks for more detail.',
     'Do not use outside knowledge.',
     'Respond in clean HTML using only <p>, <ul>, <ol>, <li>, <mark>, <strong>, <u>, <em>, and <br>.',
+    'After your complete HTML answer, on a new line add one <cite>...</cite> tag per distinct passage you used. Use a separate tag for each non-adjacent excerpt. Plain text only inside each tag, no HTML. Example: <cite>first sentence from context</cite><cite>different sentence from a later paragraph</cite>',
     'Use a few helpful emojis where they add clarity or encouragement.',
     paragraphsRule,
     wordingRule,
