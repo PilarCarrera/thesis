@@ -77,9 +77,13 @@ function getLeftMode() {
 function syncRawFromDom() {
   if (!contentEl) return;
   if (getLeftMode() !== 'larf') return;
+  // Strip citation highlights before caching — they're temporary overlays, not user edits
+  const citationEls = Array.from(contentEl.querySelectorAll('.citation-hl-para'));
+  citationEls.forEach((el) => el.classList.remove('citation-hl-para'));
   contentEl.dataset.rawHtml = contentEl.innerHTML;
   const pageKey = contentEl.dataset.currentPage;
   if (pageKey) pageHtmlCache.set(pageKey, contentEl.dataset.rawHtml);
+  citationEls.forEach((el) => el.classList.add('citation-hl-para'));
 }
 
 function renderContentFromRaw() {
@@ -88,6 +92,7 @@ function renderContentFromRaw() {
   contentEl.innerHTML = raw;
 
   const mode = getLeftMode();
+  contentEl.classList.toggle('mode-original', mode === 'original');
   if (mode === 'original') {
     unwrapAll(contentEl, 'mark');
     unwrapAll(contentEl, 'strong');
@@ -111,6 +116,7 @@ function setMarkColor(mark, color) {
 function buildHighlightPalette() {
   if (!highlightPaletteEl) return;
   highlightPaletteEl.innerHTML = '';
+
   highlightPaletteColors.forEach((color) => {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -119,7 +125,55 @@ function buildHighlightPalette() {
     btn.dataset.color = color;
     highlightPaletteEl.appendChild(btn);
   });
+
+  const divider = document.createElement('div');
+  divider.className = 'palette-divider';
+  highlightPaletteEl.appendChild(divider);
+
+  [
+    { fmt: 'bold', label: '<strong>B</strong>', title: 'Bold' },
+    { fmt: 'underline', label: '<u>U</u>', title: 'Underline' },
+  ].forEach(({ fmt, label, title }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'palette-fmt-btn';
+    btn.dataset.fmt = fmt;
+    btn.title = title;
+    btn.innerHTML = label;
+    highlightPaletteEl.appendChild(btn);
+  });
 }
+
+function toggleFormatInContent(tagName) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  if (!contentEl || !contentEl.contains(range.commonAncestorContainer)) return;
+
+  const startEl = range.startContainer.nodeType === Node.TEXT_NODE
+    ? range.startContainer.parentElement : range.startContainer;
+  const endEl = range.endContainer.nodeType === Node.TEXT_NODE
+    ? range.endContainer.parentElement : range.endContainer;
+
+  const startWrapper = startEl.closest(tagName);
+  const endWrapper = endEl.closest(tagName);
+
+  if (startWrapper && startWrapper === endWrapper) {
+    // Entire selection inside one tag → remove it
+    unwrapElement(startWrapper);
+  } else {
+    const el = document.createElement(tagName);
+    try {
+      const frag = range.extractContents();
+      el.appendChild(frag);
+      range.insertNode(el);
+    } catch { /* ignore */ }
+  }
+
+  sel.removeAllRanges();
+  syncRawFromDom();
+}
+
 
 function showColorPickerForMark(mark) {
   if (!colorPickerMenu || !mark) return;
@@ -310,14 +364,23 @@ function findTextRange(container, searchText) {
 
 export function clearCitationHighlight() {
   if (typeof CSS !== 'undefined' && CSS.highlights) CSS.highlights.delete('citation');
+  if (contentEl) {
+    contentEl.querySelectorAll('.citation-hl-para').forEach((el) => el.classList.remove('citation-hl-para'));
+  }
+}
+
+function findContainingBlock(range) {
+  let el = range.startContainer;
+  if (el.nodeType === Node.TEXT_NODE) el = el.parentElement;
+  while (el && el !== contentEl) {
+    if (['P', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV'].includes(el.tagName)) return el;
+    el = el.parentElement;
+  }
+  return null;
 }
 
 function expandRangeToParagraph(range) {
-  let el = range.startContainer;
-  if (el.nodeType === Node.TEXT_NODE) el = el.parentElement;
-  while (el && el !== contentEl && !['P', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(el.tagName)) {
-    el = el.parentElement;
-  }
+  const el = findContainingBlock(range);
   if (!el || el === contentEl || !contentEl.contains(el)) return range;
   try {
     const r = document.createRange();
@@ -332,27 +395,48 @@ export function highlightCitationText(searchTexts) {
   clearCitationHighlight();
   if (!contentEl || !searchTexts) return;
   const texts = Array.isArray(searchTexts) ? searchTexts : [searchTexts];
-  const ranges = texts
-    .map((t) => {
-      const r = findTextRange(contentEl, t);
-      return r ? expandRangeToParagraph(r) : null;
-    })
-    .filter(Boolean);
-  if (!ranges.length) return;
-  try {
-    const anchorEl = ranges[0].startContainer.parentElement;
-    const scrollContainer = contentEl.closest('.panel-body');
-    if (anchorEl && scrollContainer) {
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const anchorRect = anchorEl.getBoundingClientRect();
-      const targetTop = scrollContainer.scrollTop + (anchorRect.top - containerRect.top) - 12;
-      scrollContainer.scrollTo({ top: Math.max(targetTop, 0), behavior: 'smooth' });
-    } else {
-      anchorEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  } catch { /* ignore */ }
+
+  const foundRanges = [];
+  const foundBlocks = new Set();
+
+  texts.forEach((t) => {
+    const r = findTextRange(contentEl, t);
+    if (!r) return;
+    foundRanges.push(r);
+    const block = findContainingBlock(r);
+    if (block) foundBlocks.add(block);
+  });
+
+  if (foundRanges.length === 0 && foundBlocks.size === 0) return;
+
+  // Scroll to the first matched paragraph
+  const firstBlock = foundBlocks.size > 0 ? [...foundBlocks][0] : null;
+  if (firstBlock) {
+    try {
+      const scrollContainer = contentEl.closest('.panel-body');
+      if (scrollContainer) {
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const blockRect = firstBlock.getBoundingClientRect();
+        const targetTop = scrollContainer.scrollTop + (blockRect.top - containerRect.top) - 12;
+        scrollContainer.scrollTo({ top: Math.max(targetTop, 0), behavior: 'smooth' });
+      } else {
+        firstBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Primary approach: add CSS class to containing block elements (works in all browsers)
+  foundBlocks.forEach((block) => block.classList.add('citation-hl-para'));
+
+  // Enhancement: CSS Custom Highlights API for precise inline highlighting (modern browsers)
   if (typeof CSS !== 'undefined' && CSS.highlights) {
-    CSS.highlights.set('citation', new Highlight(...ranges));
+    try {
+      // Short citations (<= 150 chars) highlight precisely; longer ones expand to full paragraph
+      const cssRanges = foundRanges.map((r) =>
+        r.toString().length > 150 ? expandRangeToParagraph(r) : r
+      );
+      CSS.highlights.set('citation', new Highlight(...cssRanges));
+    } catch { /* CSS Highlights API not available or failed */ }
   }
 }
 
@@ -361,7 +445,22 @@ export function initLeftPanel() {
   hideAllFloatingMenus();
 
   if (highlightPaletteEl) {
+    highlightPaletteEl.addEventListener('mousedown', (e) => {
+      // Prevent losing text selection when clicking palette buttons
+      if (e.target.closest('.palette-btn, .palette-fmt-btn')) e.preventDefault();
+    });
+
     highlightPaletteEl.addEventListener('click', (e) => {
+      // Format buttons (B / U)
+      const fmtBtn = e.target.closest('.palette-fmt-btn');
+      if (fmtBtn) {
+        const fmt = fmtBtn.dataset.fmt;
+        if (fmt === 'bold') toggleFormatInContent('strong');
+        else if (fmt === 'underline') toggleFormatInContent('u');
+        return;
+      }
+
+      // Colour buttons
       const btn = e.target.closest('.palette-btn');
       if (!btn) return;
       const color = btn.dataset.color;

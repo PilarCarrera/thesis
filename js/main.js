@@ -1,7 +1,7 @@
 import { initChat, hideChatContextBubble, closeFloatingMenu } from './chat.js';
 import { initLeftPanel, loadPage, hideAllFloatingMenus } from './leftPanel.js';
 import { initRightPanel, closeSettingsPanel } from './rightPanel.js';
-import { initPageDrawer, closePageDrawer } from './pageDrawer.js';
+import { initPageDrawer, closePageDrawer, closeTextSettings } from './pageDrawer.js';
 
 const pagePickerBtn = document.querySelector('[data-page-picker-btn="true"]');
 const pagePickerMenu = document.querySelector('[data-page-picker-menu="true"]');
@@ -35,6 +35,7 @@ function closeAllPopups() {
   closeFloatingMenu();
   closeSettingsPanel();
   closePageDrawer();
+  closeTextSettings();
 }
 
 initLeftPanel();

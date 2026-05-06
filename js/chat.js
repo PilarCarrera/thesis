@@ -20,8 +20,6 @@ const chatContextClose = chatContextBubble
   : null;
 const reformattedContent = document.getElementById('reformattedContent');
 
-const chatFontType = document.getElementById('chatFontType');
-const chatFontSize = document.getElementById('chatFontSize');
 const chatHighlights = document.getElementById('chatHighlights');
 const chatParagraphs = document.getElementById('chatParagraphs');
 const chatFormat = document.getElementById('chatFormat');
@@ -33,8 +31,8 @@ const contextState = {
 };
 
 const pageLabelMap = {
-  pageBook1: 'Page 1',
-  pageBook2: 'Page 2',
+  pageBook1: 'Text 1',
+  pageBook2: 'Text 2',
 };
 
 function getCurrentPageKey() {
@@ -116,10 +114,12 @@ function detectReferencedPage(userText) {
   if (!text) return null;
 
   const has = (re) => re.test(text);
-  if (has(/\bpage\s*1\b/) || has(/\bpage\s*one\b/) || has(/\bfirst\s+page\b/) || has(/pagebook1/)) {
+  if (has(/\bpage\s*1\b/) || has(/\bpage\s*one\b/) || has(/\bfirst\s+page\b/) || has(/pagebook1/) ||
+      has(/\btext\s*1\b/) || has(/\btext\s*one\b/) || has(/\bfirst\s+text\b/)) {
     return 'pageBook1';
   }
-  if (has(/\bpage\s*2\b/) || has(/\bpage\s*two\b/) || has(/\bsecond\s+page\b/) || has(/pagebook2/)) {
+  if (has(/\bpage\s*2\b/) || has(/\bpage\s*two\b/) || has(/\bsecond\s+page\b/) || has(/pagebook2/) ||
+      has(/\btext\s*2\b/) || has(/\btext\s*two\b/) || has(/\bsecond\s+text\b/)) {
     return 'pageBook2';
   }
   return null;
@@ -132,8 +132,6 @@ function setChatEmptyVisible(visible) {
 
 function getChatSettings() {
   return {
-    fontType: chatFontType ? chatFontType.value : 'Lexend',
-    fontSize: chatFontSize ? parseInt(chatFontSize.value, 10) : 12,
     highlightsOn: chatHighlights ? chatHighlights.checked : true,
     paragraphs: chatParagraphs ? chatParagraphs.value : '2-4 lines',
     format: chatFormat ? chatFormat.value : 'Simple wording',
@@ -143,8 +141,6 @@ function getChatSettings() {
 
 export function applyChatStyle(settings) {
   if (!chatThread) return;
-  chatThread.style.fontFamily = settings.fontType;
-  chatThread.style.fontSize = `${settings.fontSize}px`;
   chatThread.style.setProperty('--chat-highlight-color', DEFAULT_HL_COLOR);
   chatThread.dataset.highlights = settings.highlightsOn ? 'on' : 'off';
 }
@@ -315,8 +311,6 @@ export function showChatContext(action, selectedText) {
 }
 
 function initializeSettings() {
-  if (chatFontType) chatFontType.value = 'Lexend';
-  if (chatFontSize) chatFontSize.value = '16';
   if (chatParagraphs) chatParagraphs.value = '2-4 lines';
   if (chatFormat) chatFormat.value = 'Simple wording';
   if (chatPoints) chatPoints.value = 'Bullet points';
@@ -499,8 +493,6 @@ export function initChat() {
   });
 
   const settingsInputs = [
-    chatFontType,
-    chatFontSize,
     chatHighlights,
     chatParagraphs,
     chatFormat,
@@ -524,6 +516,7 @@ export function initChat() {
 export function hideChatContextBubble() {
   if (chatContextBubble) chatContextBubble.hidden = true;
 }
+
 
 function clearChatContext() {
   contextState.pendingContextText = '';

@@ -22,19 +22,16 @@
   </header>
 
   <main class="layout">
-    <button class="menu-btn" aria-label="Open menu">
-      <img src="Icons/menu-burger.svg" alt="" />
-    </button>
+    <div class="side-buttons">
+      <button class="menu-btn" aria-label="Open menu">
+        <img src="Icons/menu-burger.svg" alt="" />
+      </button>
+      <button class="text-settings-btn" id="textSettingsBtn" aria-label="Text settings">⚙</button>
+    </div>
 
     <section class="panel left">
       <div class="panel-top">
-        <div class="doc-icon" aria-hidden="true">
-          <span></span>
-          <span></span>
-        </div>
-        <div class="panel-title">
-          <div class="title">REFORMATTED TEXT</div>
-        </div>
+        <div class="highlight-palette" id="highlightPalette" role="toolbar" aria-label="Highlight colors"></div>
         <div class="left-modes left-modes--top" role="group" aria-label="Text mode">
           <label class="left-control">
             <input type="radio" name="leftMode" value="larf" checked />
@@ -48,8 +45,6 @@
       </div>
 
       <div class="panel-body">
-        <div class="highlight-palette" id="highlightPalette" role="toolbar" aria-label="Highlight colors"></div>
-
         <div
           id="reformattedContent"
           class="reformatted-content"
@@ -89,7 +84,7 @@
 
       <div class="panel-body chat-view">
         <div id="chatThread" class="chat-thread" aria-live="polite"></div>
-        <div id="chatEmpty" class="chat-empty">Start a chat about the three pages.</div>
+        <div id="chatEmpty" class="chat-empty">Start a chat about the two texts.</div>
       </div>
 
       <div class="panel-body welcome-view">
@@ -122,7 +117,7 @@
         <div class="owl-mini" aria-hidden="true">
           <img src="Photos/sabiOwl.png" alt="" />
         </div>
-        <input type="text" placeholder="Ask about the three pages..." aria-label="Chat input" />
+        <input type="text" placeholder="Ask about the two texts..." aria-label="Chat input" />
         <button class="send" type="button" aria-label="Send message">Send</button>
         <button class="plus" aria-label="Open menu">
           <span>+</span>
@@ -146,33 +141,6 @@
           <button class="settings-tab" data-settings-tab="responses">Responses</button>
         </div>
         <div class="settings-body" data-settings-body="style">
-          <div class="setting-row">
-            <label for="chatFontType">Font type</label>
-            <select id="chatFontType" class="setting-select">
-              <option>OpenDyslexic</option>
-              <option>Dyslexie</option>
-              <option>Lexend</option>
-              <option>Arial</option>
-              <option>Verdana</option>
-              <option>Comic Sans</option>
-              <option>Calibri</option>
-              <option>Helvetica</option>
-              <option>Tahoma</option>
-              <option>Century Gothic</option>
-            </select>
-          </div>
-          <div class="setting-row">
-            <label for="chatFontSize">Font size</label>
-            <select id="chatFontSize" class="setting-select">
-              <option>10</option>
-              <option>11</option>
-              <option>12</option>
-              <option>13</option>
-              <option>14</option>
-              <option>15</option>
-              <option>16</option>
-            </select>
-          </div>
           <div class="setting-row">
             <label for="chatHighlights">Highlights ON</label>
             <input id="chatHighlights" class="setting-checkbox" type="checkbox" checked />
@@ -211,13 +179,38 @@
     <div class="page-drawer-title">Select reformatted page</div>
     <button type="button" class="page-drawer-item" data-page-drawer="pageBook1">
       <span class="page-drawer-check" aria-hidden="true">✓</span>
-      <span class="page-drawer-label">Page 1</span>
+      <span class="page-drawer-label">Text 1</span>
     </button>
     <button type="button" class="page-drawer-item" data-page-drawer="pageBook2">
       <span class="page-drawer-check" aria-hidden="true">✓</span>
-      <span class="page-drawer-label">Page 2</span>
+      <span class="page-drawer-label">Text 2</span>
     </button>
+
   </aside>
+
+  <div id="textSettingsPanel" class="text-settings-panel">
+    <div class="text-settings-title">Text Settings</div>
+    <div class="drawer-setting-row">
+      <label for="globalFontType">Font</label>
+      <select id="globalFontType" class="setting-select">
+        <option value="OpenDyslexic">OpenDyslexic</option>
+        <option value="Lexend" selected>Lexend</option>
+        <option value="Arial">Arial</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Comic Sans MS">Comic Sans</option>
+      </select>
+    </div>
+    <div class="drawer-setting-row">
+      <label for="globalFontSize">Size</label>
+      <select id="globalFontSize" class="setting-select">
+        <option value="12">12</option>
+        <option value="14">14</option>
+        <option value="16" selected>16</option>
+        <option value="18">18</option>
+        <option value="20">20</option>
+      </select>
+    </div>
+  </div>
 
   <script type="module" src="js/main.js"></script>
 </body>
