@@ -3,6 +3,7 @@ import { sanitizeResponseHtml, stripHtml, truncate } from './utils.js';
 import { callOpenAI } from './openai.js';
 import { getPageText, getAllPageTexts } from './rag.js';
 import { highlightCitationText, clearCitationHighlight } from './leftPanel.js';
+import { isChatHighlightEnabled, isLeftHighlightEnabled } from './appMode.js';
 
 const rightPanel = document.querySelector('.panel.right');
 const chatThread = document.getElementById('chatThread');
@@ -20,7 +21,6 @@ const chatContextClose = chatContextBubble
   : null;
 const reformattedContent = document.getElementById('reformattedContent');
 
-const chatHighlights = document.getElementById('chatHighlights');
 const chatParagraphs = document.getElementById('chatParagraphs');
 const chatFormat = document.getElementById('chatFormat');
 const chatPoints = document.getElementById('chatPoints');
@@ -131,12 +131,17 @@ function setChatEmptyVisible(visible) {
 }
 
 function getChatSettings() {
+  const pageKey = getCurrentPageKey();
   return {
-    highlightsOn: chatHighlights ? chatHighlights.checked : true,
+    highlightsOn: isChatHighlightEnabled(pageKey),
     paragraphs: chatParagraphs ? chatParagraphs.value : '2-4 lines',
     format: chatFormat ? chatFormat.value : 'Simple wording',
     points: chatPoints ? chatPoints.value : 'Bullet points',
   };
+}
+
+function stripHighlightTags(html) {
+  return (html || '').replace(/<\/?(mark|strong|u)\b[^>]*>/gi, '');
 }
 
 export function applyChatStyle(settings) {
@@ -200,7 +205,9 @@ function showCitationPopup(refEl, citations, source) {
   popup.style.top = `${rect.top - 8}px`;
   popup.style.transform = 'translateY(-100%)';
 
-  highlightCitationText(citations);
+  if (isLeftHighlightEnabled(getCurrentPageKey())) {
+    highlightCitationText(citations);
+  }
 }
 
 function hideCitationPopup() {
@@ -238,7 +245,13 @@ function appendMessage(role, content, options = {}) {
   } else {
     msg.textContent = stripHtml(content);
   }
-  if (role === 'assistant' && options.citations && options.citations.length && !isUnknownResponse(content)) {
+  if (
+    role === 'assistant' &&
+    options.citations &&
+    options.citations.length &&
+    !isUnknownResponse(content) &&
+    isChatHighlightEnabled(getCurrentPageKey())
+  ) {
     const ref = document.createElement('button');
     ref.className = 'chat-ref';
     ref.type = 'button';
@@ -314,7 +327,6 @@ function initializeSettings() {
   if (chatParagraphs) chatParagraphs.value = '2-4 lines';
   if (chatFormat) chatFormat.value = 'Simple wording';
   if (chatPoints) chatPoints.value = 'Bullet points';
-  if (chatHighlights) chatHighlights.checked = true;
   applyChatStyle(getChatSettings());
 }
 
@@ -417,7 +429,8 @@ async function handleChatSend() {
       loadingMsg.remove();
       loadingMsg = null;
     }
-    appendMessage('assistant', response, { allowHtml: settings.highlightsOn, source, citations });
+    const safeResponse = settings.highlightsOn ? response : stripHighlightTags(response);
+    appendMessage('assistant', safeResponse, { allowHtml: true, source, citations });
   } catch (err) {
     if (loadingMsg) {
       loadingMsg.remove();
@@ -492,12 +505,7 @@ export function initChat() {
     if (!isPlus && !isMenu) floatingMenu.classList.remove('open');
   });
 
-  const settingsInputs = [
-    chatHighlights,
-    chatParagraphs,
-    chatFormat,
-    chatPoints,
-  ].filter(Boolean);
+  const settingsInputs = [chatParagraphs, chatFormat, chatPoints].filter(Boolean);
 
   settingsInputs.forEach((el) => {
     el.addEventListener('change', () => {

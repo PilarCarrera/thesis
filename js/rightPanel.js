@@ -28,7 +28,7 @@ function initSettingsTabs() {
       body.classList.toggle('active', body.dataset.settingsBody === tabName);
     });
   };
-  activateTab('style');
+  activateTab('responses');
   settingsTabs.forEach((tab) => {
     tab.addEventListener('click', () => activateTab(tab.dataset.settingsTab));
   });

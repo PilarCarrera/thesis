@@ -1234,7 +1234,8 @@ body {
 
 .settings-tabs {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
+  place-items: center;
   gap: 6px;
   background: #ffffff;
   border-radius: 12px;
@@ -1250,6 +1251,7 @@ body {
   font-size: 11px;
   border-radius: 10px;
   cursor: pointer;
+  width: max-content;
 }
 
 .settings-tab.active {

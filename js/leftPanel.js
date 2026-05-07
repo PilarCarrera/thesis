@@ -12,6 +12,7 @@ import {
   positionFixedCentered,
 } from './utils.js';
 import { showChatContext } from './chat.js';
+import { isLeftHighlightEnabled } from './appMode.js';
 
 const contentEl = document.getElementById('reformattedContent');
 const highlightPaletteEl = document.getElementById('highlightPalette');
@@ -91,14 +92,11 @@ function renderContentFromRaw() {
   const raw = contentEl.dataset.rawHtml || '';
   contentEl.innerHTML = raw;
 
-  const mode = getLeftMode();
-  contentEl.classList.toggle('mode-original', mode === 'original');
-  if (mode === 'original') {
+  const pageKey = contentEl.dataset.currentPage || 'pageBook1';
+  if (!isLeftHighlightEnabled(pageKey)) {
     unwrapAll(contentEl, 'mark');
     unwrapAll(contentEl, 'strong');
     unwrapAll(contentEl, 'u');
-  } else {
-    // LARF mode keeps original highlights.
   }
 
   indexMarks();
