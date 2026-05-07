@@ -11,6 +11,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request, session, redirect, make_response
 from flask import send_from_directory
+from flask_cors import CORS
 
 try:
     from dotenv import load_dotenv
@@ -59,6 +60,7 @@ APP_PASSWORD = "316497"
 
 app = Flask(__name__, static_folder=str(ROOT), static_url_path='')
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'studybuddy-secret-key-2024')
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 HISTORY_PATH = ROOT / 'manual_eval_history.json'
 
 _LOGIN_HTML = """<!DOCTYPE html>
