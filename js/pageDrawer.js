@@ -9,7 +9,7 @@ const textSettingsPanel = document.getElementById('textSettingsPanel');
 const globalFontType = document.getElementById('globalFontType');
 const globalFontSize = document.getElementById('globalFontSize');
 
-export function applyGlobalStyle() {
+function applyGlobalStyle() {
   const fontType = globalFontType ? globalFontType.value : 'Lexend';
   const fontSize = globalFontSize ? globalFontSize.value : '16';
   document.documentElement.style.setProperty('--global-font-family', fontType);

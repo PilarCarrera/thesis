@@ -48,14 +48,6 @@ function indexMarks() {
   });
 }
 
-function unwrapMark(mark) {
-  if (!mark || !mark.parentNode) return;
-  const parent = mark.parentNode;
-  const frag = document.createDocumentFragment();
-  while (mark.firstChild) frag.appendChild(mark.firstChild);
-  parent.replaceChild(frag, mark);
-}
-
 function unwrapElement(el) {
   if (!el || !el.parentNode) return;
   const parent = el.parentNode;
@@ -157,7 +149,6 @@ function toggleFormatInContent(tagName) {
   const endWrapper = endEl.closest(tagName);
 
   if (startWrapper && startWrapper === endWrapper) {
-    // Entire selection inside one tag → remove it
     unwrapElement(startWrapper);
   } else {
     const el = document.createElement(tagName);
@@ -311,16 +302,14 @@ function findTextRange(container, searchText) {
   while (walker.nextNode()) nodes.push(walker.currentNode);
   if (!nodes.length) return null;
 
-  // Build rawText and a character-level map to node/offset
   let rawText = '';
-  const posMap = []; // posMap[i] = { nodeIdx, offset }
+  const posMap = [];
   for (let ni = 0; ni < nodes.length; ni++) {
     const t = nodes[ni].textContent;
     for (let j = 0; j < t.length; j++) posMap.push({ nodeIdx: ni, offset: j });
     rawText += t;
   }
 
-  // Build whitespace-normalised text with normPos→rawPos mapping
   let normText = '';
   const normToRaw = [];
   let prevSpace = true;
@@ -407,7 +396,6 @@ export function highlightCitationText(searchTexts) {
 
   if (foundRanges.length === 0 && foundBlocks.size === 0) return;
 
-  // Scroll to the first matched paragraph
   const firstBlock = foundBlocks.size > 0 ? [...foundBlocks][0] : null;
   if (firstBlock) {
     try {
@@ -423,13 +411,10 @@ export function highlightCitationText(searchTexts) {
     } catch { /* ignore */ }
   }
 
-  // Primary approach: add CSS class to containing block elements (works in all browsers)
   foundBlocks.forEach((block) => block.classList.add('citation-hl-para'));
 
-  // Enhancement: CSS Custom Highlights API for precise inline highlighting (modern browsers)
   if (typeof CSS !== 'undefined' && CSS.highlights) {
     try {
-      // Short citations (<= 150 chars) highlight precisely; longer ones expand to full paragraph
       const cssRanges = foundRanges.map((r) =>
         r.toString().length > 150 ? expandRangeToParagraph(r) : r
       );
@@ -542,7 +527,7 @@ export function initLeftPanel() {
       if (!mark) return;
 
       if (action === 'delete') {
-        unwrapMark(mark);
+        unwrapElement(mark);
         hideAllFloatingMenus();
         indexMarks();
         syncRawFromDom();

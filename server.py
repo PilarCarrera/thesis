@@ -9,7 +9,7 @@ import threading
 import time
 from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, session, redirect, make_response
 from flask import send_from_directory
 
 try:
@@ -55,8 +55,74 @@ def _normalize_base_url(raw_url: str) -> str:
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '').strip()
 OPENAI_BASE_URL = _normalize_base_url(os.getenv('OPENAI_BASE_URL', 'https://api.openai.com'))
 
+APP_PASSWORD = "316497"
+
 app = Flask(__name__, static_folder=str(ROOT), static_url_path='')
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'studybuddy-secret-key-2024')
 HISTORY_PATH = ROOT / 'manual_eval_history.json'
+
+_LOGIN_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StudyBuddy - Login</title>
+  <style>
+    :root{--bg:#f2f7ff;--panel:#ffffff;--line:#d7e3f3;--ink:#213042;--ink-soft:#5a6f86;--accent:#1e7fd6;--accent-2:#8ec5ff;}
+    *{box-sizing:border-box;}
+    body{margin:0;min-height:100vh;font-family:"Nunito",system-ui,sans-serif;
+      background:radial-gradient(circle at top right,#dbeeff 0%,var(--bg) 45%,#eef4ff 100%);
+      color:var(--ink);display:grid;place-items:center;padding:24px;}
+    .card{width:min(400px,100%);background:var(--panel);border:1px solid var(--line);
+      border-radius:20px;padding:32px;box-shadow:0 14px 36px rgba(40,65,95,.14);text-align:center;}
+    h2{margin:0 0 8px;font-size:26px;}
+    p{margin:0 0 24px;color:var(--ink-soft);font-size:15px;}
+    input{width:100%;padding:12px 16px;font-size:20px;letter-spacing:6px;border:1px solid var(--line);
+      border-radius:10px;outline:none;text-align:center;font-family:inherit;margin-bottom:14px;}
+    input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent-2) 35%,transparent);}
+    button{width:100%;padding:13px;background:var(--accent);color:#fff;font-size:16px;font-weight:700;
+      font-family:inherit;border:none;border-radius:10px;cursor:pointer;transition:opacity .15s;}
+    button:hover{opacity:.88;}
+    .error{margin-top:12px;color:#c0392b;font-size:14px;font-weight:600;min-height:20px;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>StudyBuddy</h2>
+    <p>Enter the access password to continue.</p>
+    <form method="POST" action="/login">
+      <input type="password" name="password" placeholder="••••••" maxlength="20" autocomplete="off" autofocus/>
+      <button type="submit">Unlock</button>
+      {error}
+    </form>
+  </div>
+</body>
+</html>"""
+
+
+def _is_authenticated() -> bool:
+    return session.get('auth') is True
+
+
+@app.before_request
+def require_auth():
+    if request.path in ('/login', '/favicon.ico'):
+        return
+    if request.path.startswith('/api/'):
+        return
+    if not _is_authenticated():
+        return redirect('/login')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = ''
+    if request.method == 'POST':
+        if request.form.get('password') == APP_PASSWORD:
+            session['auth'] = True
+            return redirect('/')
+        error = '<div class="error">Incorrect password. Please try again.</div>'
+    return _LOGIN_HTML.replace('{error}', error)
 
 
 _MANUAL_EVAL_LOCK = threading.Lock()

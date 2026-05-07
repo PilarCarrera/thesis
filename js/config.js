@@ -18,11 +18,6 @@ export const pageToFragmentUrl = {
   pageBook2: 'html/pageBook2_larf.html',
 };
 
-export const ragTextSources = [
-  'html/pageBook1_larf.html',
-  'html/pageBook2_larf.html',
-];
-
 export const LARF_PROMPT_URL = 'Context/prompt_LARF.txt';
 
 export const OPENAI_MODEL = 'gpt-4.1-mini';

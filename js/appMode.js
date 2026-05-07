@@ -3,10 +3,6 @@ function getOptionValue() {
   return raw === '2' ? '2' : '1';
 }
 
-export function getAppOption() {
-  return getOptionValue();
-}
-
 export function isLeftHighlightEnabled(pageKey) {
   const option = getOptionValue();
   if (option === '1') return pageKey === 'pageBook2';

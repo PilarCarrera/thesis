@@ -441,7 +441,6 @@ async function handleChatSend() {
     console.error(err);
   } finally {
     if (loadingMsg) loadingMsg.remove();
-    // context is consumed on send
   }
 }
 
