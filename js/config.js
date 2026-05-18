@@ -21,5 +21,5 @@ export const pageToFragmentUrl = {
 export const LARF_PROMPT_URL = 'Context/prompt_LARF.txt';
 
 export const OPENAI_MODEL = 'gpt-4.1-mini';
-export const OPENAI_PROXY_URL = 'https://protective-carol-model-took.trycloudflare.com/api/response';
-export const OPENAI_HEALTH_URL = 'https://protective-carol-model-took.trycloudflare.com/api/health';
+export const OPENAI_PROXY_URL = 'https://convention-convergence-declared-sleeping.trycloudflare.com/api/response';
+export const OPENAI_HEALTH_URL = 'https://convention-convergence-declared-sleeping.trycloudflare.com/api/health';
