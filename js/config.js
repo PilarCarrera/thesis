@@ -21,5 +21,5 @@ export const pageToFragmentUrl = {
 export const LARF_PROMPT_URL = 'Context/prompt_LARF.txt';
 
 export const OPENAI_MODEL = 'gpt-4.1-mini';
-export const OPENAI_PROXY_URL = 'https://off-preparation-regards-plugins.trycloudflare.com/api/response';
-export const OPENAI_HEALTH_URL = 'https://off-preparation-regards-plugins.trycloudflare.com/api/health';
+export const OPENAI_PROXY_URL = 'https://wiring-employ-drilling-forecast.trycloudflare.com/api/response';
+export const OPENAI_HEALTH_URL = 'https://wiring-employ-drilling-forecast.trycloudflare.com/api/health';
