@@ -21,5 +21,5 @@ export const pageToFragmentUrl = {
 export const LARF_PROMPT_URL = 'Context/prompt_LARF.txt';
 
 export const OPENAI_MODEL = 'gpt-4.1-mini';
-export const OPENAI_PROXY_URL = 'https://videos-adapted-handling-sao.trycloudflare.com/api/response';
-export const OPENAI_HEALTH_URL = 'https://videos-adapted-handling-sao.trycloudflare.com/api/health';
+export const OPENAI_PROXY_URL = 'https://pot-speech-missing-goto.trycloudflare.com/api/response';
+export const OPENAI_HEALTH_URL = 'https://pot-speech-missing-goto.trycloudflare.com/api/health';
