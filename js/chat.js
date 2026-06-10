@@ -109,6 +109,45 @@ function isSubjectiveOrUnclear(text) {
   );
 }
 
+const BLOCKED_EXAM_PATTERNS = [
+  // Multiple-choice answer format — any message listing A. / B. options
+  /\bA[\.\)]\s+\S.{2,200}\bB[\.\)]\s+\S/is,
+
+  // Q1 (sea) — "English idioms related to the sea" is a very exam-specific phrase
+  /english\s+idioms\s+related\s+to\s+the\s+sea/i,
+
+  // Q2 (shipping) — asking what the writer suggests about shipping forecast in the third paragraph
+  /writer.{0,40}suggest.{0,50}shipping\s+forecast.{0,60}third\s+paragraph/i,
+  /shipping\s+forecast.{0,60}third\s+paragraph.{0,60}(suggest|writer)/i,
+
+  // Q3 (poetry) — "refers to poetry … fifth paragraph … to show"
+  /writer\s+refers\s+to\s+poetry.{0,50}fifth\s+paragraph/i,
+  /poetry.{0,40}fifth\s+paragraph.{0,50}show/i,
+
+  // Q4 (main aim) — "main aim of the book is to"
+  /main\s+aim\s+of\s+the\s+book/i,
+  /text\s+suggests.{0,40}main\s+aim/i,
+
+  // Q5 (colour problem) — "what problem regarding colour … first paragraph"
+  /problem\s+regarding\s+colour/i,
+
+  // Q6 (historian careful) — "historian writing about colour … should be careful"
+  /historian\s+writing\s+about\s+colour/i,
+  /(fourth|4th)\s+paragraph.{0,80}historian.{0,50}colour.{0,50}careful/i,
+
+  // Q7 (further research) — "further research done on … fifth paragraph"
+  /further\s+research\s+done\s+on/i,
+
+  // Q8 (recurring) — "people who have studied colour have" or "idea recurring … studied colour"
+  /people\s+who\s+have\s+studied\s+colour/i,
+  /idea\s+recurring.{0,50}studied\s+colour/i,
+];
+
+function isBlockedExamQuestion(text) {
+  const t = (text || '').trim();
+  return BLOCKED_EXAM_PATTERNS.some((re) => re.test(t));
+}
+
 function detectReferencedPage(userText) {
   const text = (userText || '').toLowerCase();
   if (!text) return null;
@@ -374,6 +413,14 @@ async function handleChatSend() {
     appendMessage(
       'assistant',
       '<p><mark style="background-color:#E2ABE24D;">I don&#39;t think I understood your question.</mark> <u>Please rephrase it</u> or ask something directly from the text, and I will help. :)</p>',
+      { allowHtml: true }
+    );
+    return;
+  }
+  if (isBlockedExamQuestion(userText)) {
+    appendMessage(
+      'assistant',
+      '<p><mark style="background-color:#E2ABE24D;">Please rephrase your question.</mark> You cannot ask the reading comprehension questions directly in the chat. <u>Try asking about a specific word, idea, or phrase from the text</u> instead, and I will be happy to help! :)</p>',
       { allowHtml: true }
     );
     return;
